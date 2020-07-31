@@ -1,0 +1,137 @@
+using System;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using OneloginAwsCli.Extensions;
+using OneloginAwsCli.Models;
+
+namespace OneloginAwsCli.Api
+{
+    public class OneLoginClient
+    {
+        private readonly string _clientId;
+        private readonly string _clientSecret;
+        private readonly string _region;
+        private readonly HttpClient _client;
+        private readonly JsonSerializerOptions _options;
+
+        private OneLoginToken _internalToken { get; set; }
+        private DateTime _expires { get; set; } = DateTime.UtcNow;
+
+        public OneLoginClient(string clientId, string clientSecret, string region = "us")
+        {
+            _region = region;
+            _clientSecret = clientSecret;
+            _clientId = clientId;
+
+            _client = new HttpClient();
+            _options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = new SnakeCaseNamingPolicy()
+            };
+        }
+
+        // https://developers.onelogin.com/api-docs/1/oauth20-tokens/generate-tokens
+        public async Task<OneLoginToken> GenerateTokens()
+        {
+            var body = JsonSerializer.Serialize(new { GrantType = "client_credentials" }, _options);
+
+            var message = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri($"https://api.{_region}.onelogin.com/auth/oauth2/v2/token")
+            };
+
+            message.Headers.TryAddWithoutValidation("Authorization", $"client_id:{_clientId}, client_secret:{_clientSecret}");
+            message.Content = new StringContent(body, Encoding.UTF8, "application/json");
+
+            var response = await _client.SendAsync(message);
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.ReadAsAsync<OneLoginToken>(_options);
+            return result;
+        }
+
+        private readonly SemaphoreSlim _refreshSyncLock = new SemaphoreSlim(1, 1);
+        private async Task RefreshInternalToken()
+        {
+            // I need to sync access to the token refresh actions. I should only have one token
+            // request in flight. Although doesn't really matter for the way I'm using it
+            await _refreshSyncLock.WaitAsync();
+
+            if (_internalToken == null || DateTime.Now > _expires)
+            {
+                _internalToken = await GenerateTokens();
+                _expires = _internalToken.CreatedAt.ToUniversalTime().AddSeconds(_internalToken.ExpiresIn);
+                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(_internalToken.TokenType, _internalToken.AccessToken);
+            }
+
+            _refreshSyncLock.Release();
+        }
+
+        // https://developers.onelogin.com/api-docs/2/saml-assertions/generate-saml-assertion
+        public async Task<SAMLResponse> GenerateSamlAssertion(string usernameOrEmail, string password, string appId, string subdomain)
+        {
+            await RefreshInternalToken();
+
+            var body = JsonSerializer.Serialize(new
+            {
+                UsernameOrEmail = usernameOrEmail,
+                Password = password,
+                AppId = appId,
+                Subdomain = subdomain,
+            }, _options);
+            var content = new StringContent(body, Encoding.UTF8, "application/json");
+
+            var response = await _client.PostAsync($"https://api.{_region}.onelogin.com/api/2/saml_assertion", content);
+
+            var result = await response.ReadAsAsync<SAMLResponse>(_options);
+            return result;
+        }
+
+        public async Task<FactorResponse> VerifyFactor(string appId, int deviceId, string stateToken, string otpToken = null)
+        {
+            await RefreshInternalToken();
+
+            var body = JsonSerializer.Serialize(new
+            {
+                AppId = appId,
+                DeviceId = $"{deviceId}",
+                StateToken = stateToken,
+                OtpToken = otpToken,
+            }, _options);
+            var content = new StringContent(body, Encoding.UTF8, "application/json");
+
+            var response = await _client.PostAsync($"https://api.{_region}.onelogin.com/api/2/saml_assertion/verify_factor", content);
+
+            var result = await response.ReadAsAsync<FactorResponse>(_options);
+            return result;
+        }
+    }
+
+    public class SnakeCaseNamingPolicy : JsonNamingPolicy
+    {
+        public override string ConvertName(string name)
+        {
+            return ToSnakeCase(name);
+        }
+
+        public static string ToSnakeCase(string str)
+        {
+            return string.Concat(
+                str.Select(
+                    (x, i) => i > 0 && char.IsUpper(x)
+                        ? "_" + x
+                        : x.ToString()
+                        )
+                ).ToLower();
+        }
+    }
+}

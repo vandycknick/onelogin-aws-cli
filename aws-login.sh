@@ -36,7 +36,10 @@ function login {
 
     CREDS="{ \"username\": $USERNAME, \"password\": $PASSWORD, \"otp\": \"$OTP\" }"
 
-    (echo $CREDS && cat) | dotnet run -p src/OneloginAwsCli -- --profile $PROFILE
+    OS=$(uname -s | awk '{print tolower($0)}' | sed "s/darwin/osx/")
+    EXE="./artifacts/$OS-x64/onelogin-aws"
+
+    (echo $CREDS && cat) | $EXE --profile $PROFILE
 }
 
 while getopts "h?p:" opt; do
@@ -47,10 +50,13 @@ while getopts "h?p:" opt; do
         ;;
     p)
         PROFILE=$OPTARG
-        login
-        exit 0
         ;;
     esac
 done
 
-show_help
+if [ -n "$PROFILE" ]; then
+    login
+    exit 0
+else
+    show_help
+fi

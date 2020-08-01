@@ -20,6 +20,7 @@ namespace OneloginAwsCli
     {
         private const string CONFIG_FILE = ".onelogin-aws.config";
         private const string AWS_CONFIG_FILE = ".aws/credentials";
+        private static Encoding s_utf8WithoutBom = new UTF8Encoding(false);
 
         static Task Main(string[] args)
         {
@@ -147,7 +148,7 @@ namespace OneloginAwsCli
             parser.WriteFile(
                 filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE),
                 parsedData: awsConfig,
-                fileEncoding: Encoding.UTF8
+                fileEncoding: s_utf8WithoutBom
             );
 
             console.WriteLine("Finished");

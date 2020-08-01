@@ -6,4 +6,10 @@
         <BaseOutputPath>$(BuildDirectory)bin/$(MSBuildProjectName)/</BaseOutputPath>
     </PropertyGroup>
 
+    <ItemGroup Condition="$(IsPackable) == 'true'">
+      <PackageReference Include="MinVer" Version="2.3.0">
+        <PrivateAssets>all</PrivateAssets>
+      </PackageReference>
+    </ItemGroup>
+
 </Project>

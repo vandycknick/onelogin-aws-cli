@@ -65,7 +65,7 @@ namespace OneloginAwsCli
                 throw new NotSupportedException("Only supports input via console in");
             }
 
-            console.WriteLineIf(JsonSerializer.Serialize(credentials), verbose);
+            console.WriteLineIf(() => JsonSerializer.Serialize(credentials), verbose);
 
             var parser = new FileIniDataParser();
             var config = parser.ReadFile(
@@ -87,7 +87,7 @@ namespace OneloginAwsCli
                 appId: appId,
                 subdomain: subdomain
             );
-            console.WriteLineIf(JsonSerializer.Serialize(saml), verbose);
+            console.WriteLineIf(() => JsonSerializer.Serialize(saml), verbose);
 
             var otp = credentials.OTP;
             if (string.IsNullOrEmpty(credentials.OTP))
@@ -123,7 +123,6 @@ namespace OneloginAwsCli
 
             if (picked.Role == null) throw new Exception("Invalid choice");
 
-
             var stsClient1 = new Amazon.SecurityToken.AmazonSecurityTokenServiceClient(new AnonymousAWSCredentials());
 
             var assumeRoleReq = new AssumeRoleWithSAMLRequest
@@ -135,7 +134,7 @@ namespace OneloginAwsCli
             };
 
             var assumeRoleRes = await stsClient1.AssumeRoleWithSAMLAsync(assumeRoleReq);
-            console.WriteLineIf(JsonSerializer.Serialize(assumeRoleRes), verbose);
+            console.WriteLineIf(() => JsonSerializer.Serialize(assumeRoleRes), verbose);
 
             var awsConfig = parser.ReadFile(
                 filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)

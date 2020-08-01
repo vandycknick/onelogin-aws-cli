@@ -1,3 +1,4 @@
+using System;
 using System.CommandLine;
 
 namespace OneloginAwsCli.Extensions
@@ -11,12 +12,9 @@ namespace OneloginAwsCli.Extensions
             console.Out.Write($"{value}\n");
 
         // Very cheeky way to log some of the intermediate responses for debugging purposes 😅
-        public static void WriteLineIf(this IConsole console, string value, bool assertion)
+        public static void WriteLineIf(this IConsole console, Func<string> logger, bool assertion)
         {
-            if (assertion)
-            {
-                console.WriteLine(value);
-            }
+            if (assertion) console.WriteLine(logger.Invoke());
         }
     }
 }

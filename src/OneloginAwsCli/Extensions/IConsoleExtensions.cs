@@ -1,5 +1,5 @@
 using System;
-using System.CommandLine;
+using OneloginAwsCli.Console;
 
 namespace OneloginAwsCli.Extensions
 {
@@ -8,13 +8,12 @@ namespace OneloginAwsCli.Extensions
         public static void Write(this IConsole console, string value) =>
             console.Out.Write(value);
 
-        public static void WriteLine(this IConsole console, string value) =>
-            console.Out.Write($"{value}\n");
+        public static void WriteLine(this IConsole console) => console.Write(Environment.NewLine);
 
-        // Very cheeky way to log some of the intermediate responses for debugging purposes 😅
-        public static void WriteLineIf(this IConsole console, Func<string> logger, bool assertion)
+        public static void WriteLine(this IConsole console, string value)
         {
-            if (assertion) console.WriteLine(logger.Invoke());
+            console.Write(value);
+            console.WriteLine();
         }
     }
 }

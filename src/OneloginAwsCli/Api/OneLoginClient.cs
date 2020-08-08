@@ -11,24 +11,19 @@ using OneloginAwsCli.Models;
 
 namespace OneloginAwsCli.Api
 {
-    public class OneLoginClient
+    public class OneLoginClient : IOneLoginClient
     {
-        private readonly string _clientId;
-        private readonly string _clientSecret;
-        private readonly string _region;
         private readonly HttpClient _client;
         private readonly JsonSerializerOptions _options;
 
         private OneLoginToken _internalToken { get; set; }
         private DateTime _expires { get; set; } = DateTime.UtcNow;
+        public OneLoginCredentials Credentials { get; set; }
+        public string Region { get; set; } = "us";
 
-        public OneLoginClient(string clientId, string clientSecret, string region = "us")
+        public OneLoginClient(HttpClient client)
         {
-            _region = region;
-            _clientSecret = clientSecret;
-            _clientId = clientId;
-
-            _client = new HttpClient();
+            _client = client;
             _options = new JsonSerializerOptions
             {
                 IgnoreNullValues = true,
@@ -45,10 +40,10 @@ namespace OneloginAwsCli.Api
             var message = new HttpRequestMessage
             {
                 Method = HttpMethod.Post,
-                RequestUri = new Uri($"https://api.{_region}.onelogin.com/auth/oauth2/v2/token")
+                RequestUri = new Uri($"https://api.{Region}.onelogin.com/auth/oauth2/v2/token")
             };
 
-            message.Headers.TryAddWithoutValidation("Authorization", $"client_id:{_clientId}, client_secret:{_clientSecret}");
+            message.Headers.TryAddWithoutValidation("Authorization", $"client_id:{Credentials.ClientId}, client_secret:{Credentials.ClientSecret}");
             message.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
             var response = await _client.SendAsync(message);
@@ -90,7 +85,7 @@ namespace OneloginAwsCli.Api
             }, _options);
             var content = new StringContent(body, Encoding.UTF8, "application/json");
 
-            var response = await _client.PostAsync($"https://api.{_region}.onelogin.com/api/2/saml_assertion", content);
+            var response = await _client.PostAsync($"https://api.{Region}.onelogin.com/api/2/saml_assertion", content);
 
             var result = await response.ReadAsAsync<SAMLResponse>(_options);
             return result;
@@ -109,7 +104,7 @@ namespace OneloginAwsCli.Api
             }, _options);
             var content = new StringContent(body, Encoding.UTF8, "application/json");
 
-            var response = await _client.PostAsync($"https://api.{_region}.onelogin.com/api/2/saml_assertion/verify_factor", content);
+            var response = await _client.PostAsync($"https://api.{Region}.onelogin.com/api/2/saml_assertion/verify_factor", content);
 
             var result = await response.ReadAsAsync<FactorResponse>(_options);
             return result;

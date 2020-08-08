@@ -2,7 +2,8 @@
 set -o pipefail -o noclobber -o nounset
 
 PROFILE=""
-ITEM='<1Password Login Item should go here>'
+NATIVE=""
+ITEM='OneLogin DataCamp'
 
 function show_help {
     echo """aws-login:
@@ -37,12 +38,17 @@ function login {
     CREDS="{ \"username\": $USERNAME, \"password\": $PASSWORD, \"otp\": \"$OTP\" }"
 
     OS=$(uname -s | awk '{print tolower($0)}' | sed "s/darwin/osx/")
-    EXE="./artifacts/$OS-x64/onelogin-aws"
 
-    (echo $CREDS && cat) | $EXE --profile $PROFILE
+    if [ -z "$NATIVE" ]; then
+        EXE="dotnet run -p src/OneloginAwsCli --"
+    else
+        EXE="./artifacts/$OS-x64/onelogin-aws"
+    fi
+
+    (echo $CREDS && cat) | $EXE login --profile $PROFILE
 }
 
-while getopts "h?p:" opt; do
+while getopts "h?np:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -50,6 +56,9 @@ while getopts "h?p:" opt; do
         ;;
     p)
         PROFILE=$OPTARG
+        ;;
+    n)
+        NATIVE="yes"
         ;;
     esac
 done

@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.0.100-preview.7.20366.6'
+
+      - name: Package
+        run: make
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Package Native
+        run: make package-native
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: artifacts
+          path: artifacts
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.x
+
+    - name: Setup Go Environment
+      run: |
+        echo "::set-env name=GOPATH::$(go env GOPATH)"
+        echo "::add-path::$(go env GOPATH)/bin"
+      shell: bash
+
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifacts
+
+    - name: Prepare Release
+      run: |
+        ls -R
+        mkdir release
+        cp linux-x64/onelogin-aws release/onelogin-aws-linux-x64
+        chmod +x release/onelogin-aws-linux-x64
+        cp osx-x64/onelogin-aws release/onelogin-aws-osx-x64
+        chmod +x release/onelogin-aws-osx-x64
+        cp *.nupkg release
+        cd release && sha256sum * > SHA256SUMS.txt
+
+    - name: Create Release
+      shell: bash
+      run: |
+        go env
+        go get -u github.com/tcnksm/ghr
+        ghr -t ${{ secrets.GITHUB_TOKEN }} -b $(echo -e "onelogin-aws-cli release. Have a look at the CHANGELOG.md if you would like to know what changed.\n\n\`\`\`\n$(cat release/SHA256SUMS.txt)\n\`\`\`\n\n(Installation instructions: https://github.com/nickvdyck/onelogin-aws-cli/#install)") ${{ steps.get_version.outputs.VERSION }} ./release/
+
+    - name: Push to feedz.io
+      run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.FEEDZ_IO_TOKEN }} --source https://f.feedz.io/nvd/onelogin-aws-cli/nuget/index.json --skip-duplicate
+
+    # - name: Push to nuget
+    #   run: dotnet nuget push artifacts/**/*.nupkg --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json --skip-duplicate

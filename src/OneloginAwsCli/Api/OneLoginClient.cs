@@ -7,7 +7,9 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using OneloginAwsCli.Extensions;
-using OneloginAwsCli.Models;
+using OneloginAwsCli.Api.Models;
+using OneloginAwsCli.Api.Exceptions;
+using System.Net;
 
 namespace OneloginAwsCli.Api
 {
@@ -48,7 +50,7 @@ namespace OneloginAwsCli.Api
 
             var response = await _client.SendAsync(message);
 
-            response.EnsureSuccessStatusCode();
+            await EnsureApiRequestSuccess(response);
 
             var result = await response.ReadAsAsync<OneLoginToken>(_options);
             return result;
@@ -87,6 +89,8 @@ namespace OneloginAwsCli.Api
 
             var response = await _client.PostAsync($"https://api.{Region}.onelogin.com/api/2/saml_assertion", content);
 
+            await EnsureApiRequestSuccess(response);
+
             var result = await response.ReadAsAsync<SAMLResponse>(_options);
             return result;
         }
@@ -106,8 +110,28 @@ namespace OneloginAwsCli.Api
 
             var response = await _client.PostAsync($"https://api.{Region}.onelogin.com/api/2/saml_assertion/verify_factor", content);
 
+            await EnsureApiRequestSuccess(response);
+
             var result = await response.ReadAsAsync<FactorResponse>(_options);
             return result;
+        }
+
+        public async Task EnsureApiRequestSuccess(HttpResponseMessage response)
+        {
+            if (response.IsSuccessStatusCode) return;
+
+            var responseContent = string.Empty;
+            if (response.Content is object)
+            {
+                responseContent = await response.Content.ReadAsStringAsync();
+            }
+
+            throw response.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => new AuthorizationException(responseContent),
+                HttpStatusCode.NotFound => new NotFoundException(responseContent),
+                _ => new ApiException(responseContent, response.StatusCode),
+            };
         }
     }
 

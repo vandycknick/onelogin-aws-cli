@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace OneloginAwsCli.Models
+namespace OneloginAwsCli.Api.Models
 {
     public class SAMLResponse
     {

@@ -1,4 +1,4 @@
-namespace OneloginAwsCli.Models
+namespace OneloginAwsCli.Api.Models
 {
     public class User
     {

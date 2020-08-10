@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
 using Amazon.Runtime;
@@ -14,9 +14,12 @@ using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
 using IniParser;
 using OneloginAwsCli.Api;
+using OneloginAwsCli.Api.Exceptions;
+using OneloginAwsCli.Api.Models;
 using OneloginAwsCli.Console;
 using OneloginAwsCli.Extensions;
 using OneloginAwsCli.Models;
+using OneloginAwsCli.Services;
 using IConsole = OneloginAwsCli.Console.IConsole;
 
 namespace OneloginAwsCli
@@ -28,6 +31,17 @@ namespace OneloginAwsCli
             var command = new Command("login")
             {
                 new Option(
+                    new string[] { "-C", "--config-name"}
+                )
+                {
+                    Argument = new Argument<string>()
+                    {
+                        Name = "config_name",
+                        Arity = ArgumentArity.ExactlyOne,
+                    }.ValidateConfigNames(),
+                    Description = " Switch configuration name within config file",
+                },
+                new Option(
                     new string[] { "-p", "--profile"}
                 )
                 {
@@ -35,8 +49,7 @@ namespace OneloginAwsCli
                     {
                         Name = "profile",
                     },
-                    Description = "AWS profile to use.",
-                    IsRequired = true,
+                    Description = "AWS profile name.",
                 },
                 new Option(
                     new string[] { "-u", "--username" }
@@ -49,6 +62,17 @@ namespace OneloginAwsCli
                     Description = "AWS profile to use.",
                 },
                 new Option(
+                    new string[] { "-r", "--region"}
+                )
+                {
+                    Argument = new Argument<string>()
+                    {
+                       Name = "region",
+                       Arity = ArgumentArity.ExactlyOne,
+                    },
+                    Description = "Specify default region for AWS profile being updated"
+                },
+                new Option(
                     new string[] { "-v", "--verbose"}
                 )
                 {
@@ -57,23 +81,23 @@ namespace OneloginAwsCli
                 }
             };
 
-            command.Handler = CommandHandler.Create<string, string, bool>((profile, username, verbose) =>
+            command.Handler = CommandHandler.Create<string, string, string, string>((profile, configName, region, username) =>
             {
                 var client = new OneLoginClient(new HttpClient());
-                var handler = new LoginCommand(client, new SystemConsole());
+                var handler = new LoginCommand(client, new SystemConsole(), new SettingsBuilder());
 
-                return handler.InvokeAsync(profile, username, verbose);
+                return handler.InvokeAsync(profile, username, configName, region);
             });
 
             return command;
         }
 
-        private const string CONFIG_FILE = ".onelogin-aws.config";
         private const string AWS_CONFIG_FILE = ".aws/credentials";
-        private static Encoding s_utf8WithoutBom = new UTF8Encoding(false);
+        private static Encoding _utf8WithoutBom = new UTF8Encoding(false);
 
         private readonly IOneLoginClient _client;
         private readonly IConsole _console;
+        private readonly ISettingsBuilder _settingsBuilder;
         private readonly AnsiStringBuilder _ansiBuilder;
 
         private readonly string _info;
@@ -83,10 +107,11 @@ namespace OneloginAwsCli
         private readonly string _question;
         private readonly string _pointer;
 
-        public LoginCommand(IOneLoginClient client, IConsole console)
+        public LoginCommand(IOneLoginClient client, IConsole console, ISettingsBuilder settingsBuilder)
         {
             _client = client;
             _console = console;
+            _settingsBuilder = settingsBuilder;
 
             _ansiBuilder = new AnsiStringBuilder();
             _info = _ansiBuilder.Clear().Blue("ℹ").ToString();
@@ -95,12 +120,6 @@ namespace OneloginAwsCli
             _error = _ansiBuilder.Clear().Red("✖").ToString();
             _question = _ansiBuilder.Clear().Green("?").ToString();
             _pointer = _ansiBuilder.Clear().Write("\x1b[38;5;245m").Write("❯").ResetColor().ToString();
-        }
-
-        private class IAMRole
-        {
-            public string Role { get; set; }
-            public string Principal { get; set; }
         }
 
         private List<IAMRole> GetIAMRoleArns(string saml)
@@ -129,20 +148,6 @@ namespace OneloginAwsCli
             return roles;
         }
 
-        private void ReadCredentialsFromInput(ref Credentials credentials)
-        {
-            var line = _console.In.ReadLine();
-
-            var creds = JsonSerializer.Deserialize<Credentials>(line, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            credentials.Username = creds.Username ?? credentials.Username;
-            credentials.Password = creds.Password;
-            credentials.OTP = creds.OTP;
-        }
-
         public Device SelectOTPDevice(SAMLResponse saml)
         {
             if (saml.Devices.Count == 1) return saml.Devices.FirstOrDefault();
@@ -151,7 +156,7 @@ namespace OneloginAwsCli
             var device = _console.Select(
                 message: "Select your OTP Device:",
                 items: saml.Devices,
-                onRenderItem: (device, selected) => device.DeviceType,
+                onRenderItem: (device, selected) => $"[{device.DeviceId}]: {device.DeviceType}",
                 indent: 5
             );
 
@@ -163,18 +168,30 @@ namespace OneloginAwsCli
             return device;
         }
 
-        public async Task InvokeAsync(string profile, string username, bool verbose)
+        public async Task InvokeAsync(string profile, string username, string configName, string region)
         {
-            var credentials = new Credentials
+            _settingsBuilder
+                .UseDefaults()
+                .UseFromEnvironment()
+                .UseConfigName(configName)
+                .UseCommandLineOverrides(profile, username, region);
+
+            if (_console.IsInputRedirected)
             {
-                Username = username,
+                _settingsBuilder.UseFromJsonInput(_console.In);
+            }
+
+            var settings = _settingsBuilder.Build();
+
+            _client.Credentials = new OneLoginCredentials
+            {
+                ClientId = settings.ClientId,
+                ClientSecret = settings.ClientSecret,
             };
 
-            if (_console.IsInputRedirected) ReadCredentialsFromInput(ref credentials);
-
-            if (string.IsNullOrEmpty(credentials.Username))
+            if (string.IsNullOrEmpty(settings.Username))
             {
-                credentials.Username = _console.Input<string>("Onelogin Username:");
+                settings.Username = _console.Input<string>("Onelogin Username:");
                 _console.Write(_ansiBuilder.Clear().EraseLines(2).ToString());
             }
 
@@ -182,13 +199,13 @@ namespace OneloginAwsCli
                 _ansiBuilder
                     .Clear()
                     .Write($"{_success} Onelogin Username: ")
-                    .Cyan(credentials.Username)
+                    .Cyan(settings.Username)
                     .ToString()
             );
 
-            if (string.IsNullOrEmpty(credentials.Password))
+            if (string.IsNullOrEmpty(settings.Password))
             {
-                credentials.Password = _console.Password("Onelogin Password:");
+                settings.Password = _console.Password("Onelogin Password:");
                 _console.Write(_ansiBuilder.Clear().EraseLines(2).ToString());
             }
 
@@ -200,67 +217,59 @@ namespace OneloginAwsCli
                     .ToString()
             );
 
-            var parser = new FileIniDataParser();
-            var config = parser.ReadFile(
-                filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), CONFIG_FILE)
-            );
-
-            // TODO: validate these values
-            var clientId = config["defaults"]["client_id"];
-            var clientSecret = config["defaults"]["client_secret"];
-            var subdomain = config["defaults"]["subdomain"];
-            var appId = config["defaults"]["aws_app_id"];
-            var duration = config["defaults"]["duration_seconds"];
-
-            _client.Credentials = new OneLoginCredentials
-            {
-                ClientId = clientId,
-                ClientSecret = clientSecret,
-            };
-
             var saml = string.Empty;
-            var typedOTP = credentials.OTP == null;
-            using (var spinner = _console.RenderSpinner(true))
+            var typedOTP = settings.OTP == null;
+
+            try
             {
-                _console.Write("  Requesting SAML assertion");
-                var samlResponse = await _client.GenerateSamlAssertion(
-                    usernameOrEmail: credentials.Username,
-                    password: credentials.Password,
-                    appId: appId,
-                    subdomain: subdomain
-                );
-
-                saml = samlResponse.Data;
-                if (samlResponse.Message != "Success")
+                using (var spinner = _console.RenderSpinner(true))
                 {
-                    if (string.IsNullOrEmpty(credentials.OTP) || samlResponse.Devices.Count > 1)
-                    {
-                        spinner.Stop();
-                        _console.WriteLine(_ansiBuilder.Clear().CursorLeft().Write($"{_warning} Requesting SAML assertion").ToString());
-                    }
-
-                    var device = SelectOTPDevice(samlResponse);
-
-                    if (string.IsNullOrEmpty(credentials.OTP))
-                    {
-                        _console.Write($"  ");
-                        credentials.OTP = _console.Input<string>("OTP Token:");
-                    }
-
-                    var factor = await _client.VerifyFactor(
-                        appId: appId,
-                        deviceId: device.DeviceId,
-                        stateToken: samlResponse.StateToken,
-                        otpToken: credentials.OTP
+                    _console.Write("  Requesting SAML assertion");
+                    var samlResponse = await _client.GenerateSamlAssertion(
+                        usernameOrEmail: settings.Username,
+                        password: settings.Password,
+                        appId: settings.AwsAppId,
+                        subdomain: settings.Subdomain
                     );
 
-                    saml = factor.Data;
-                }
-            }
+                    saml = samlResponse.Data;
+                    if (samlResponse.Message != "Success")
+                    {
+                        if (string.IsNullOrEmpty(settings.OTP) || samlResponse.Devices.Count > 1)
+                        {
+                            spinner.Stop();
+                            _console.WriteLine(_ansiBuilder.Clear().CursorLeft().Write($"{_warning} Requesting SAML assertion").ToString());
+                        }
 
-            _console.Write(_ansiBuilder.EraseLines(typedOTP ? 3 : 2).CursorLeft().ToString());
-            _console.WriteLine($"{_success} Requesting SAML assertion");
-            if (typedOTP) _console.WriteLine($"  {_success} OTP Token: {credentials.OTP}");
+                        var device = SelectOTPDevice(samlResponse);
+
+                        if (string.IsNullOrEmpty(settings.OTP))
+                        {
+                            _console.Write($"  ");
+                            settings.OTP = _console.Input<string>("OTP Token:");
+                        }
+
+                        var factor = await _client.VerifyFactor(
+                            appId: settings.AwsAppId,
+                            deviceId: device.DeviceId,
+                            stateToken: samlResponse.StateToken,
+                            otpToken: settings.OTP
+                        );
+
+                        saml = factor.Data;
+                    }
+                }
+
+                _console.Write(_ansiBuilder.EraseLines(typedOTP ? 3 : 2).CursorLeft().ToString());
+                _console.WriteLine($"{_success} Requesting SAML assertion");
+                if (typedOTP) _console.WriteLine($"  {_success} OTP Token: {settings.OTP}");
+            }
+            catch (ApiException)
+            {
+                _console.Write(_ansiBuilder.EraseLines(1).CursorLeft().ToString());
+                _console.WriteLine($"{_error} Requesting SAML assertion");
+                throw;
+            }
 
             var data = Convert.FromBase64String(saml);
             var decodedString = Encoding.UTF8.GetString(data);
@@ -291,16 +300,16 @@ namespace OneloginAwsCli
 
                 var assumeRoleReq = new AssumeRoleWithSAMLRequest
                 {
-                    DurationSeconds = int.Parse(duration),
+                    DurationSeconds = int.Parse(settings.DurationSeconds),
                     RoleArn = role.Role,
                     PrincipalArn = role.Principal,
                     SAMLAssertion = saml
                 };
 
                 var assumeRoleRes = await stsClient.AssumeRoleWithSAMLAsync(assumeRoleReq);
-                // console.WriteLineIf(() => JsonSerializer.Serialize(assumeRoleRes), verbose);
                 expires = assumeRoleRes.Credentials.Expiration;
 
+                var parser = new FileIniDataParser();
                 var awsConfig = parser.ReadFile(
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)
                 );
@@ -312,7 +321,7 @@ namespace OneloginAwsCli
                 parser.WriteFile(
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE),
                     parsedData: awsConfig,
-                    fileEncoding: s_utf8WithoutBom
+                    fileEncoding: _utf8WithoutBom
                 );
             }
 
@@ -320,6 +329,27 @@ namespace OneloginAwsCli
             _console.WriteLine($"  {_pointer} Credentials cached in '{Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)}'");
             _console.WriteLine($"  {_pointer} Expires at {expires.ToLocalTime():yyyy-MM-dd H:mm:sszzz}");
             _console.WriteLine($"  {_pointer} Use aws cli with --profile {profile}");
+        }
+    }
+
+    static class LoginCommandValidators
+    {
+        public static Argument<T> ValidateConfigNames<T>(this Argument<T> arg)
+        {
+            arg.AddValidator(result =>
+            {
+                var value = result.GetValueOrDefault<string>();
+                var sections = SettingsBuilder.GetConfigNames();
+
+                if (sections.Contains(value))
+                {
+                    return null;
+                }
+
+                return $"Given config name `{value}` does not exist in your config file.";
+            });
+
+            return arg;
         }
     }
 }

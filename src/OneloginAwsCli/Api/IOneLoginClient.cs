@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using OneloginAwsCli.Models;
+using OneloginAwsCli.Api.Models;
 
 namespace OneloginAwsCli.Api
 {

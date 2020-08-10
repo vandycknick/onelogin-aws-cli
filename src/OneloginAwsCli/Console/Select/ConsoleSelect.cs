@@ -20,7 +20,6 @@ namespace OneloginAwsCli.Console.Select
         private bool _initialRender = true;
         private AnsiStringBuilder _stringBuilder;
         private int _selectedItem = 0;
-        private bool _cancelled = false;
 
         public ConsoleSelect(IConsole console, ConsoleSelectOptions<T> options)
         {
@@ -118,7 +117,6 @@ namespace OneloginAwsCli.Console.Select
 
                     case ConsoleKey.Escape:
                     case ConsoleKey.C when key.Modifiers == ConsoleModifiers.Control:
-                        _cancelled = true;
                         running = false;
                         break;
 

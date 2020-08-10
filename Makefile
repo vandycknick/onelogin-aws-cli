@@ -5,7 +5,7 @@ BUILD			:= $(shell pwd)/.build
 CONFIGURATION	:= Release
 CLI_PROJECT		:= src/OneloginAwsCli/OneloginAwsCli.csproj
 CLI_TOOL		:= onelogin-aws
-RUNTIME 		:= $(shell uname -s | awk '{print tolower($0)}' | sed "s/darwin/osx/")-x64
+RUNTIME 		:= $(shell uname -s | awk '{print tolower($$0)}' | sed "s/darwin/osx/")-x64
 
 .PHONY: default
 default: package

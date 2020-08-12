@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Text.Json;
 using IniParser;
@@ -21,14 +22,20 @@ namespace OneloginAwsCli.Services
             get => Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), CONFIG_FILE_NAME);
         }
 
-        public static bool ConfigFileExists() => File.Exists(ConfigFile);
-
-        public static List<string> GetConfigNames()
+        public static void ThrowIfConfigFileMissing(IFileInfo file)
         {
-            ThrowIfConfigFileIsMissing();
+            if (!file.Exists)
+            {
+                throw new ConfigFileNotFoundException(file.Name);
+            }
+        }
 
-            var filePath = Path.Join(ConfigFile);
-            using var reader = File.OpenText(filePath);
+        public static List<string> GetConfigNames(IFileSystem fileSystem)
+        {
+            var file = fileSystem.FileInfo.FromFileName(ConfigFile);
+            ThrowIfConfigFileMissing(file);
+
+            using var reader = file.OpenText();
             return GetConfigNames(reader);
         }
 
@@ -40,7 +47,6 @@ namespace OneloginAwsCli.Services
         }
 
         private readonly IniData _iniConfigFile;
-
         private Uri? _baseUri;
         private string? _subdomain;
         private string? _username;
@@ -55,12 +61,13 @@ namespace OneloginAwsCli.Services
         private string? _roleARN;
         private string? _region;
 
-        public SettingsBuilder()
+        public SettingsBuilder(IFileSystem fileSystem)
         {
-            ThrowIfConfigFileIsMissing();
+            var file = fileSystem.FileInfo.FromFileName(ConfigFile);
 
-            var filePath = Path.Join(ConfigFile);
-            using var reader = File.OpenText(filePath);
+            ThrowIfConfigFileMissing(file);
+
+            using var reader = file.OpenText();
             var parser = new FileIniDataParser();
             _iniConfigFile = parser.ReadData(reader);
         }
@@ -177,13 +184,5 @@ namespace OneloginAwsCli.Services
                 durationSeconds: _durationSeconds,
                 awsAppId: _awsAppId
             );
-
-        public static void ThrowIfConfigFileIsMissing()
-        {
-            if (!ConfigFileExists())
-            {
-                throw new ConfigFileNotFoundException(ConfigFile);
-            }
-        }
     }
 }

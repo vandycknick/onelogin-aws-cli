@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -84,7 +85,9 @@ namespace OneloginAwsCli
             command.Handler = CommandHandler.Create<string, string, string, string>((profile, configName, region, username) =>
             {
                 var client = new OneLoginClient(new HttpClient());
-                var handler = new LoginCommand(client, new SystemConsole(), new SettingsBuilder());
+                var fileSystem = new FileSystem();
+                var builder = new SettingsBuilder(fileSystem);
+                var handler = new LoginCommand(client, new SystemConsole(), builder);
 
                 return handler.InvokeAsync(profile, username, configName, region);
             });
@@ -264,7 +267,7 @@ namespace OneloginAwsCli
                     }
                 }
 
-                _console.Write(_ansiBuilder.EraseLines(typedOTP ? 3 : 2).CursorLeft().ToString());
+                _console.Write(_ansiBuilder.EraseLines(typedOTP ? 3 : 1).CursorLeft().ToString());
                 _console.WriteLine($"{_success} Requesting SAML assertion");
                 if (typedOTP) _console.WriteLine($"  {_success} OTP Token: {otp}");
             }
@@ -342,8 +345,9 @@ namespace OneloginAwsCli
         {
             arg.AddValidator(result =>
             {
+                var fileSystem = new FileSystem();
                 var value = result.GetValueOrDefault<string>();
-                var sections = SettingsBuilder.GetConfigNames();
+                var sections = SettingsBuilder.GetConfigNames(fileSystem);
 
                 if (value is null)
                 {

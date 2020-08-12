@@ -5,6 +5,7 @@ using System.CommandLine.Invocation;
 using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
 using OneloginAwsCli.Api.Exceptions;
 using OneloginAwsCli.Exceptions;
@@ -79,6 +80,9 @@ namespace OneloginAwsCli
             else if (exception is ApiException api)
             {
                 context.Console.Error.WriteLine($"Oh no, a Onelogin api exception ({api.StatusCode}):");
+                context.Console.Error.WriteLine($"ApiError: {JsonSerializer.Serialize(api.ApiError)}");
+                context.Console.Error.WriteLine();
+                context.Console.Error.WriteLine($"Exception:");
                 context.Console.Error.WriteLine(api.ToString());
             }
             else

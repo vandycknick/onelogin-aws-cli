@@ -46,7 +46,7 @@ function login {
         EXE="./artifacts/$OS-x64/onelogin-aws"
     fi
 
-    (echo $CREDS && cat) | $EXE login --profile $PROFILE
+    (echo $CREDS && cat) | ($EXE login --profile $PROFILE && echo "Press Enter to exit.")
 }
 
 while getopts "h?np:" opt; do

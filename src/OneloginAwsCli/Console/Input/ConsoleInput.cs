@@ -10,12 +10,11 @@ namespace OneloginAwsCli.Console.Input
             return (Z)ConvertTo(_key, typeof(Z));
         }
 
-        private static object ConvertTo(string _toparse, Type _t)
+        private static object ConvertTo(string toParse, Type type)
         {
-            // Test for Nullable<T> and return the base type instead:
-            Type undertype = Nullable.GetUnderlyingType(_t);
-            Type basetype = undertype ?? _t;
-            return Convert.ChangeType(_toparse, basetype);
+            var undertype = Nullable.GetUnderlyingType(type);
+            var basetype = undertype ?? type;
+            return Convert.ChangeType(toParse, basetype);
         }
 
         private readonly IConsole _console;
@@ -100,7 +99,7 @@ namespace OneloginAwsCli.Console.Input
         {
             var line = _console.In.ReadLine();
             _console.Out.WriteLine();
-            return line;
+            return line ?? string.Empty;
         }
 
         public T GetValue()

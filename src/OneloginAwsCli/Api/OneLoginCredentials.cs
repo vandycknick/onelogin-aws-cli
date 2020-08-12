@@ -4,5 +4,8 @@ namespace OneloginAwsCli.Api
     {
         public string ClientId { get; set; }
         public string ClientSecret { get; set; }
+
+        public OneLoginCredentials(string clientId, string clientSecret) =>
+            (ClientId, ClientSecret) = (clientId, clientSecret);
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace OneloginAwsCli.Console
 {
@@ -39,7 +41,7 @@ namespace OneloginAwsCli.Console
             }
         }
 
-        private char[] _buffer;
+        private char[]? _buffer;
         private int _index;
 
         public AnsiStringBuilder()
@@ -50,6 +52,8 @@ namespace OneloginAwsCli.Console
 
         private void Grow(int sizeHint)
         {
+            ThrowDisposedIf(_buffer is null);
+
             var nextSize = _buffer.Length * 2;
             if (sizeHint != 0)
             {
@@ -66,6 +70,8 @@ namespace OneloginAwsCli.Console
 
         public AnsiStringBuilder Write(char value)
         {
+            ThrowDisposedIf(_buffer is null);
+
             if (_buffer.Length - _index < 1)
             {
                 Grow(1);
@@ -77,6 +83,8 @@ namespace OneloginAwsCli.Console
 
         public AnsiStringBuilder Write(ReadOnlySpan<char> value)
         {
+            ThrowDisposedIf(_buffer is null);
+
             if (_buffer.Length - _index < value.Length)
             {
                 Grow(value.Length);
@@ -93,6 +101,8 @@ namespace OneloginAwsCli.Console
 
         public AnsiStringBuilder Write(string value)
         {
+            ThrowDisposedIf(_buffer is null);
+
             if (_buffer.Length - _index < value.Length)
             {
                 Grow(value.Length);
@@ -113,6 +123,8 @@ namespace OneloginAwsCli.Console
 
         public AnsiStringBuilder WriteLine()
         {
+            ThrowDisposedIf(_buffer is null);
+
             if (crlf)
             {
                 if (_buffer.Length - _index < 2) Grow(2);
@@ -199,6 +211,15 @@ namespace OneloginAwsCli.Console
         public ReadOnlySpan<char> AsSpan() => _buffer.AsSpan(0, _index);
 
         public override string ToString() => AsSpan().ToString();
+
+        public void ThrowDisposedIf([DoesNotReturnIf(true)] bool condition)
+        {
+            if (condition) ThrowObjectDisposed();
+        }
+
+        [DoesNotReturn]
+        public void ThrowObjectDisposed() =>
+                throw new ObjectDisposedException(nameof(AnsiStringBuilder));
 
         public void Dispose()
         {

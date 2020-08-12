@@ -56,7 +56,7 @@ namespace OneloginAwsCli.Console.Input
         {
             var line = _console.In.ReadLine();
             _console.Out.WriteLine();
-            return line;
+            return line ?? string.Empty;
         }
 
         public string GetValue()

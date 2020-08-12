@@ -22,10 +22,10 @@ namespace OneloginAwsCli.Console.Spinner
         private readonly AnsiStringBuilder _stringBuilder;
         private readonly ConsoleSpinnerOptions _options;
 
-        public ConsoleSpinner(IConsole console, ConsoleSpinnerOptions options = default)
+        public ConsoleSpinner(IConsole console, ConsoleSpinnerOptions? options = default)
         {
             _console = console;
-            _options = options;
+            _options = options ?? new ConsoleSpinnerOptions();
             _stringBuilder = new AnsiStringBuilder();
 
             if (_options.AutoStart) Start();

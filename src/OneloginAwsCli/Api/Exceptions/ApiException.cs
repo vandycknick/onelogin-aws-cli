@@ -16,7 +16,7 @@ namespace OneloginAwsCli.Api.Exceptions
         /// <param name="message">The error message</param>
         /// <param name="httpStatusCode">The HTTP status code from the response</param>
         public ApiException(string message, HttpStatusCode code)
-            : this(message, code ,null)
+            : this(message, code, null)
         {
 
         }
@@ -27,13 +27,13 @@ namespace OneloginAwsCli.Api.Exceptions
         /// <param name="message">The error message</param>
         /// <param name="httpStatusCode">The HTTP status code from the response</param>
         /// <param name="innerException">The inner exception</param>
-        public ApiException(string message, HttpStatusCode code, Exception innerException)
+        public ApiException(string message, HttpStatusCode code, Exception? innerException)
             : this(GetApiErrorFromExceptionMessage(message), code, innerException)
         {
 
         }
 
-        protected ApiException(ApiError apiError, HttpStatusCode statusCode, Exception innerException)
+        protected ApiException(ApiError apiError, HttpStatusCode statusCode, Exception? innerException)
             : base(null, innerException)
         {
             ApiError = apiError ?? throw new ArgumentNullException(nameof(apiError));

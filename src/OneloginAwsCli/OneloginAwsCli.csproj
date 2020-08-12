@@ -5,6 +5,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <ToolCommandName>onelogin-aws</ToolCommandName>
     <AssemblyName>onelogin-aws</AssemblyName>
+    <Nullable>enable</Nullable>
 
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>

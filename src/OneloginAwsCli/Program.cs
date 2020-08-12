@@ -42,23 +42,23 @@ namespace OneloginAwsCli
                 context.Console.Error.WriteLine("Missing required setting!");
                 context.Console.Error.WriteLine();
 
-                if (string.IsNullOrEmpty(required.Settings.Profile))
+                if (string.IsNullOrEmpty(required.Profile))
                 {
                     context.Console.Error.WriteLine("No profile provided, please specify a profile either via the config file an environment variable ONELOGIN_AWS_CLI_PROFILE or as a command line flag --profile.");
                 }
-                else if (string.IsNullOrEmpty(required.Settings.ClientId) || string.IsNullOrEmpty(required.Settings.ClientSecret))
+                else if (string.IsNullOrEmpty(required.ClientId) || string.IsNullOrEmpty(required.ClientSecret))
                 {
                     context.Console.Error.WriteLine("A valid client_id and client_secret are required! Please add them to your config.");
                 }
-                else if (string.IsNullOrEmpty(required.Settings.AwsAppId))
+                else if (string.IsNullOrEmpty(required.AwsAppId))
                 {
                     context.Console.Error.WriteLine("A valid aws_app_id is required! Please add it to your config file.");
                 }
-                else if (string.IsNullOrEmpty(required.Settings.Subdomain))
+                else if (string.IsNullOrEmpty(required.Subdomain))
                 {
                     context.Console.Error.WriteLine("A valid subdomain is required! Please add it to your config file.");
                 }
-                else if (string.IsNullOrEmpty(required.Settings.DurationSeconds))
+                else if (string.IsNullOrEmpty(required.DurationSeconds))
                 {
                     context.Console.Error.WriteLine("No duration_seconds found, please ad it to your config file or use an environment variable `ONELOGIN_AWS_CLI_DURATION_SECONDS`");
                 }

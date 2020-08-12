@@ -1,14 +1,16 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace OneloginAwsCli.Api.Models
 {
     public class SAMLResponse
     {
-        public string Message { get; set; }
-        public string Data { get; set; }
-        public string StateToken { get; set; }
-        public List<Device> Devices { get; set; }
-        public string CallbackUrl { get; set; }
-        public User User { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string Data { get; set; } = string.Empty;
+        public string StateToken { get; set; } = string.Empty;
+        public List<Device> Devices { get; set; } = new List<Device>();
+        public string CallbackUrl { get; set; } = string.Empty;
+        public User User { get; set; } = null!;
     }
 }

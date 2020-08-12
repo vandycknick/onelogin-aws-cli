@@ -2,7 +2,10 @@ namespace OneloginAwsCli.Models
 {
     public class IAMRole
     {
-        public string Role { get; set; }
-        public string Principal { get; set; }
+        public IAMRole(string role, string principal) =>
+            (Role, Principal) = (role, principal);
+
+        public string Role { get; }
+        public string Principal { get; }
     }
 }

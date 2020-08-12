@@ -29,7 +29,7 @@ namespace OneloginAwsCli.Console
             return pwd.GetValue();
         }
 
-        public static T Select<T>(this IConsole console, string message, IReadOnlyList<T> items, Func<T, bool, string> onRenderItem = null, int indent = 2) where T : class
+        public static T Select<T>(this IConsole console, string message, IReadOnlyList<T> items, Func<T, bool, string>? onRenderItem = null, int indent = 2) where T : class
         {
             var options = new ConsoleSelectOptions<T>
             {

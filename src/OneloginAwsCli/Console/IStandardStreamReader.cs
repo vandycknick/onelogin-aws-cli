@@ -6,6 +6,6 @@ namespace OneloginAwsCli.Console
     {
         ConsoleKeyInfo ReadKey();
         int Read();
-        string ReadLine();
+        string? ReadLine();
     }
 }

@@ -36,7 +36,7 @@ namespace OneloginAwsCli
                 {
                     Argument = new Argument<string>()
                     {
-                        Name = "config_name",
+                        Name = "configName",
                         Arity = ArgumentArity.ExactlyOne,
                     }.ValidateConfigNames(),
                     Description = " Switch configuration name within config file",
@@ -93,7 +93,7 @@ namespace OneloginAwsCli
         }
 
         private const string AWS_CONFIG_FILE = ".aws/credentials";
-        private static Encoding _utf8WithoutBom = new UTF8Encoding(false);
+        private static readonly Encoding _utf8WithoutBom = new UTF8Encoding(false);
 
         private readonly IOneLoginClient _client;
         private readonly IConsole _console;
@@ -137,11 +137,10 @@ namespace OneloginAwsCli
             {
                 var node = nodes[i];
                 var parts = node.InnerText.Trim().Split(',');
-                var role = new IAMRole
-                {
-                    Role = parts[0],
-                    Principal = parts[1],
-                };
+                var role = new IAMRole(
+                    role: parts[0],
+                    principal: parts[1]
+                );
                 roles.Add(role);
             }
 
@@ -150,7 +149,10 @@ namespace OneloginAwsCli
 
         public Device SelectOTPDevice(SAMLResponse saml)
         {
-            if (saml.Devices.Count == 1) return saml.Devices.FirstOrDefault();
+            if (saml.Devices.Count == 1)
+            {
+                return saml.Devices[0];
+            }
 
             _console.Write("  ");
             var device = _console.Select(
@@ -168,8 +170,10 @@ namespace OneloginAwsCli
             return device;
         }
 
-        public async Task InvokeAsync(string profile, string username, string configName, string region)
+        public async Task InvokeAsync(string? profile, string? username, string? configName, string? region)
         {
+            string? password, otp, otpDeviceId;
+
             _settingsBuilder
                 .UseDefaults()
                 .UseFromEnvironment()
@@ -182,16 +186,16 @@ namespace OneloginAwsCli
             }
 
             var settings = _settingsBuilder.Build();
+            (username, password, otp, otpDeviceId) = settings;
 
-            _client.Credentials = new OneLoginCredentials
-            {
-                ClientId = settings.ClientId,
-                ClientSecret = settings.ClientSecret,
-            };
+            _client.Credentials = new OneLoginCredentials(
+                clientId: settings.ClientId,
+                clientSecret: settings.ClientSecret
+            );
 
-            if (string.IsNullOrEmpty(settings.Username))
+            if (string.IsNullOrEmpty(username))
             {
-                settings.Username = _console.Input<string>("Onelogin Username:");
+                username = _console.Input<string>("Onelogin Username:");
                 _console.Write(_ansiBuilder.Clear().EraseLines(2).ToString());
             }
 
@@ -199,13 +203,13 @@ namespace OneloginAwsCli
                 _ansiBuilder
                     .Clear()
                     .Write($"{_success} Onelogin Username: ")
-                    .Cyan(settings.Username)
+                    .Cyan(username)
                     .ToString()
             );
 
-            if (string.IsNullOrEmpty(settings.Password))
+            if (string.IsNullOrEmpty(password))
             {
-                settings.Password = _console.Password("Onelogin Password:");
+                password = _console.Password("Onelogin Password:");
                 _console.Write(_ansiBuilder.Clear().EraseLines(2).ToString());
             }
 
@@ -218,7 +222,7 @@ namespace OneloginAwsCli
             );
 
             var saml = string.Empty;
-            var typedOTP = settings.OTP == null;
+            var typedOTP = otp == null;
 
             try
             {
@@ -226,8 +230,8 @@ namespace OneloginAwsCli
                 {
                     _console.Write("  Requesting SAML assertion");
                     var samlResponse = await _client.GenerateSamlAssertion(
-                        usernameOrEmail: settings.Username,
-                        password: settings.Password,
+                        usernameOrEmail: username,
+                        password: password,
                         appId: settings.AwsAppId,
                         subdomain: settings.Subdomain
                     );
@@ -235,7 +239,7 @@ namespace OneloginAwsCli
                     saml = samlResponse.Data;
                     if (samlResponse.Message != "Success")
                     {
-                        if (string.IsNullOrEmpty(settings.OTP) || samlResponse.Devices.Count > 1)
+                        if (string.IsNullOrEmpty(otp) || samlResponse.Devices?.Count > 1)
                         {
                             spinner.Stop();
                             _console.WriteLine(_ansiBuilder.Clear().CursorLeft().Write($"{_warning} Requesting SAML assertion").ToString());
@@ -243,17 +247,17 @@ namespace OneloginAwsCli
 
                         var device = SelectOTPDevice(samlResponse);
 
-                        if (string.IsNullOrEmpty(settings.OTP))
+                        if (string.IsNullOrEmpty(otp))
                         {
                             _console.Write($"  ");
-                            settings.OTP = _console.Input<string>("OTP Token:");
+                            otp = _console.Input<string>("OTP Token:");
                         }
 
                         var factor = await _client.VerifyFactor(
                             appId: settings.AwsAppId,
                             deviceId: device.DeviceId,
                             stateToken: samlResponse.StateToken,
-                            otpToken: settings.OTP
+                            otpToken: otp
                         );
 
                         saml = factor.Data;
@@ -262,7 +266,7 @@ namespace OneloginAwsCli
 
                 _console.Write(_ansiBuilder.EraseLines(typedOTP ? 3 : 2).CursorLeft().ToString());
                 _console.WriteLine($"{_success} Requesting SAML assertion");
-                if (typedOTP) _console.WriteLine($"  {_success} OTP Token: {settings.OTP}");
+                if (typedOTP) _console.WriteLine($"  {_success} OTP Token: {otp}");
             }
             catch (ApiException)
             {
@@ -340,6 +344,11 @@ namespace OneloginAwsCli
             {
                 var value = result.GetValueOrDefault<string>();
                 var sections = SettingsBuilder.GetConfigNames();
+
+                if (value is null)
+                {
+                    return $"Empty config name!";
+                }
 
                 if (sections.Contains(value))
                 {

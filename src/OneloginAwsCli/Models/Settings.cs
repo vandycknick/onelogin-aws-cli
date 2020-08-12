@@ -2,22 +2,40 @@ using System;
 
 namespace OneloginAwsCli.Models
 {
-    public class Settings : ICloneable
+    public class Settings
     {
-        public Uri BaseUri { get; set; }
-        public string Subdomain { get; set; }
-        public string Username { get; set; }
-        internal string Password { get; set; } // Only used internally, not exposed via config setting.
-        internal string OTP { get; set; } // Only used internally, not exposed via config setting.
-        public string OTPDeviceId { get; set; }
-        public string ClientId { get; set; }
-        public string ClientSecret { get; set; }
-        public string Profile { get; set; }
-        public string DurationSeconds { get; set; }
-        public string AwsAppId { get; set; }
-        public string RoleARN { get; set; }
-        public string Region { get; set; }
+        public Settings(
+            Uri? baseUri, string subdomain, string? username, string? password,
+            string? otp, string? otpDeviceId, string clientId, string clientSecret,
+            string profile, string durationSeconds, string awsAppId,
+            string? roleArn, string? region) =>
+            (
+                BaseUri, Subdomain, Username, Password,
+                OTP, OTPDeviceId, ClientId, ClientSecret,
+                Profile, DurationSeconds, AwsAppId,
+                RoleARN, Region
+            ) = (
+                baseUri, subdomain, username, password,
+                otp, otpDeviceId, clientId, clientSecret,
+                profile, durationSeconds, awsAppId,
+                roleArn, region
+            );
 
-        public object Clone() => MemberwiseClone();
+        public Uri? BaseUri { get; }
+        public string Subdomain { get; }
+        public string? Username { get; }
+        internal string? Password { get; } // Only used internally, not exposed via config setting.
+        internal string? OTP { get; } // Only used internally, not exposed via config setting.
+        public string? OTPDeviceId { get; }
+        public string ClientId { get; }
+        public string ClientSecret { get; }
+        public string Profile { get; }
+        public string DurationSeconds { get; }
+        public string AwsAppId { get; }
+        public string? RoleARN { get; }
+        public string? Region { get; }
+
+        public void Deconstruct(out string? username, out string? password, out string? otp, out string? otpDeviceId ) =>
+            (username, password, otp, otpDeviceId) = (Username, Password, OTP, OTPDeviceId);
     }
 }

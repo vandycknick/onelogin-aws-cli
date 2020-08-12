@@ -18,10 +18,10 @@ namespace OneloginAwsCli.Console
         private class AnonymousStandardStreamReader : IStandardStreamReader
         {
             private readonly Func<int> _read;
-            private readonly Func<string> _readLine;
+            private readonly Func<string?> _readLine;
             private readonly Func<bool, ConsoleKeyInfo> _readKey;
             private readonly int _handle;
-            public AnonymousStandardStreamReader(Func<int> read, Func<string> readLine, Func<bool, ConsoleKeyInfo> readKey, int handle)
+            public AnonymousStandardStreamReader(Func<int> read, Func<string?> readLine, Func<bool, ConsoleKeyInfo> readKey, int handle)
             {
                 _read = read;
                 _readLine = readLine;
@@ -32,7 +32,7 @@ namespace OneloginAwsCli.Console
             public bool IsTTY() => StandardStreamHandle.IsTTY(_handle);
             public int Read() => _read();
             public ConsoleKeyInfo ReadKey() => _readKey(true);
-            public string ReadLine() => _readLine();
+            public string? ReadLine() => _readLine();
         }
     }
 }

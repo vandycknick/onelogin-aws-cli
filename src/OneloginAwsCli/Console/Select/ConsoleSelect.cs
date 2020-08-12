@@ -18,21 +18,37 @@ namespace OneloginAwsCli.Console.Select
         private readonly IReadOnlyList<T> _items;
         private readonly Func<T, bool, string> _onRenderItem;
         private bool _initialRender = true;
-        private AnsiStringBuilder _stringBuilder;
+        private readonly AnsiStringBuilder _stringBuilder;
         private int _selectedItem = 0;
 
-        public ConsoleSelect(IConsole console, ConsoleSelectOptions<T> options)
+        public ConsoleSelect(IConsole console, ConsoleSelectOptions<T>? options = default)
         {
+            if (console is null)
+            {
+                throw new ArgumentNullException(nameof(console));
+            }
+
             _console = console;
-            _options = options;
-            _items = options.Items ?? new List<T>();
-            _onRenderItem = options.OnRenderItem ?? DefaultOnRenderItem;
-            _selectedItem = options.DefaultSelectedItem;
+            _options = options ?? new ConsoleSelectOptions<T>();
+
+            _items = _options.Items ?? new List<T>();
+            _onRenderItem = _options.OnRenderItem ?? DefaultOnRenderItem;
+            _selectedItem = _options.DefaultSelectedItem;
 
             _stringBuilder = new AnsiStringBuilder();
         }
 
-        private string DefaultOnRenderItem(T item, bool _) => item.ToString();
+        private string DefaultOnRenderItem(T item, bool _)
+        {
+            var value = item.ToString();
+
+            if (value is null)
+            {
+                throw new InvalidOperationException("An item in the lists ToString method returned null!");
+            }
+
+            return value;
+        }
 
         private void RenderInteractive()
         {

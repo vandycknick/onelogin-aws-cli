@@ -4,9 +4,11 @@ namespace OneloginAwsCli.Exceptions
 {
     public class ConfigFileNotFoundException : Exception
     {
-        public ConfigFileNotFoundException() : base() { }
-        public ConfigFileNotFoundException(string message) : base(message) { }
-        public ConfigFileNotFoundException(string message, Exception inner) : base(message, inner) { }
+        public ConfigFileNotFoundException(string filePath) : base($"Config file not found: {filePath}", null)
+        {
+            FilePath = filePath;
+        }
+
         public string FilePath { get; set; }
     }
 }

@@ -7,9 +7,19 @@ namespace OneloginAwsCli.Extensions
 {
     public static class HttpResponseMessageExtensions
     {
-        public static async Task<T> ReadAsAsync<T>(this HttpResponseMessage response, JsonSerializerOptions options = default)
+        public static async Task<T> ReadAsAsync<T>(this HttpResponseMessage response, JsonSerializerOptions? options = default)
         {
-            if (response.Content is object && response.Content.Headers.ContentType.MediaType == "application/json")
+            if (response is null)
+            {
+                throw new ArgumentNullException(nameof(response));
+            }
+
+            if (options is null)
+            {
+                options = new JsonSerializerOptions();
+            }
+
+            if (response.Content is object && response.Content.Headers.ContentType?.MediaType == "application/json")
             {
                 var contentStream = await response.Content.ReadAsStreamAsync();
 

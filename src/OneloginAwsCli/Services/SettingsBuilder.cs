@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -38,8 +39,21 @@ namespace OneloginAwsCli.Services
             return data.Sections.Select(section => section.SectionName).ToList();
         }
 
-        private Settings _settings = new Settings();
         private readonly IniData _iniConfigFile;
+
+        private Uri? _baseUri;
+        private string? _subdomain;
+        private string? _username;
+        private string? _password;
+        private string? _otp;
+        private string? _otpDeviceId;
+        private string? _clientId;
+        private string? _clientSecret;
+        private string? _profile;
+        private string? _durationSeconds;
+        private string? _awsAppId;
+        private string? _roleARN;
+        private string? _region;
 
         public SettingsBuilder()
         {
@@ -57,24 +71,24 @@ namespace OneloginAwsCli.Services
         {
             var configName = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_CONFIG_NAME");
 
-            if (configName != null) UseConfigName(configName);
+            UseConfigName(configName);
 
-            _settings.Profile = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_PROFILE") ?? _settings.Profile;
-            _settings.Username = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_USERNAME") ?? _settings.Username;
-            _settings.DurationSeconds = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_DURATION_SECONDS") ?? _settings.DurationSeconds;
+            _profile = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_PROFILE") ?? _profile;
+            _username = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_USERNAME") ?? _username;
+            _durationSeconds = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_DURATION_SECONDS") ?? _durationSeconds;
 
             return this;
         }
 
-        public SettingsBuilder UseCommandLineOverrides(string profile, string userName, string region)
+        public SettingsBuilder UseCommandLineOverrides(string? profile, string? userName, string? region)
         {
-            _settings.Profile = profile ?? _settings.Profile;
-            _settings.Username = userName ?? _settings.Username;
-            _settings.Region = region ?? _settings.Region;
+            _profile = profile ?? _profile;
+            _username = userName ?? _username;
+            _region = region ?? _region;
             return this;
         }
 
-        public SettingsBuilder UseConfigName(string name)
+        public SettingsBuilder UseConfigName(string? name)
         {
             if (string.IsNullOrEmpty(name)) return this;
 
@@ -82,72 +96,93 @@ namespace OneloginAwsCli.Services
 
             if (data["base_uri"] != null)
             {
-                _settings.BaseUri = new Uri(data["base_uri"]);
+                _baseUri = new Uri(data["base_uri"]);
             }
 
-            _settings.Subdomain = data["subdomain"] ?? _settings.Subdomain;
-            _settings.Username = data["username"] ?? _settings.Username;
-            _settings.OTPDeviceId = data["otp_device_id"] ?? _settings.OTPDeviceId;
-            _settings.ClientId = data["client_id"] ?? _settings.ClientId;
-            _settings.ClientSecret = data["client_secret"] ?? _settings.ClientSecret;
-            _settings.Profile = data["profile"] ?? _settings.Profile;
-            _settings.DurationSeconds = data["duration_seconds"] ?? _settings.DurationSeconds;
-            _settings.AwsAppId = data["aws_app_id"] ?? _settings.AwsAppId;
-            _settings.RoleARN = data["role_arn"] ?? _settings.RoleARN;
-            _settings.Region = data["region"] ?? _settings.Region;
+            _subdomain = data["subdomain"] ?? _subdomain;
+            _username = data["username"] ?? _username;
+            _otpDeviceId = data["otp_device_id"] ?? _otpDeviceId;
+            _clientId = data["client_id"] ?? _clientId;
+            _clientSecret = data["client_secret"] ?? _clientSecret;
+            _profile = data["profile"] ?? _profile;
+            _durationSeconds = data["duration_seconds"] ?? _durationSeconds;
+            _awsAppId = data["aws_app_id"] ?? _awsAppId;
+            _roleARN = data["role_arn"] ?? _roleARN;
+            _region = data["region"] ?? _region;
 
             return this;
         }
 
         private class Credentials
         {
-            public string Username { get; set; }
-            public string Password { get; set; }
-            public string OTP { get; set; }
+            public string? Username { get; set; }
+            public string? Password { get; set; }
+            public string? OTP { get; set; }
         }
 
         public SettingsBuilder UseFromJsonInput(IStandardStreamReader reader)
         {
             var line = reader.ReadLine();
 
+            if (line is null)
+            {
+                return this;
+            }
+
             var creds = JsonSerializer.Deserialize<Credentials>(line, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
-            _settings.Username = creds.Username ?? _settings.Username;
-            _settings.Password = creds.Password;
-            _settings.OTP = creds.OTP;
+            _username = creds?.Username ?? _username;
+            _password = creds?.Password ?? _password;
+            _otp = creds?.OTP ?? _otp;
             return this;
         }
 
         public Settings Build()
         {
-            if (string.IsNullOrEmpty(_settings.ClientId) || string.IsNullOrEmpty(_settings.ClientSecret) ||
-                string.IsNullOrEmpty(_settings.Subdomain) || string.IsNullOrEmpty(_settings.AwsAppId) ||
-                string.IsNullOrEmpty(_settings.DurationSeconds) || string.IsNullOrEmpty(_settings.Profile)
+            if (string.IsNullOrEmpty(_clientId) || string.IsNullOrEmpty(_clientSecret) ||
+                string.IsNullOrEmpty(_subdomain) || string.IsNullOrEmpty(_awsAppId) ||
+                string.IsNullOrEmpty(_durationSeconds) || string.IsNullOrEmpty(_profile)
             )
             {
-                ThrowMissingRequiredSettingsException(_settings);
+                ThrowMissingRequiredSettingsException();
             }
 
-            return (Settings)_settings.Clone();
+            return new Settings(
+                baseUri: _baseUri,
+                subdomain: _subdomain,
+                username: _username,
+                password: _password,
+                otp: _otp,
+                otpDeviceId: _otpDeviceId,
+                clientId: _clientId,
+                clientSecret: _clientSecret,
+                profile: _profile,
+                durationSeconds: _durationSeconds,
+                awsAppId: _awsAppId,
+                roleArn: _roleARN,
+                region: _region
+            );
         }
 
-        public static void ThrowMissingRequiredSettingsException(Settings settings) =>
-            throw new MissingRequiredSettingsException
-            {
-                Settings = (Settings)settings.Clone()
-            };
+        [DoesNotReturn]
+        public void ThrowMissingRequiredSettingsException() =>
+            throw new MissingRequiredSettingsException(
+                subdomain: _subdomain,
+                clientId: _clientId,
+                clientSecret: _clientSecret,
+                profile: _profile,
+                durationSeconds: _durationSeconds,
+                awsAppId: _awsAppId
+            );
 
         public static void ThrowIfConfigFileIsMissing()
         {
             if (!ConfigFileExists())
             {
-                throw new ConfigFileNotFoundException
-                {
-                    FilePath = ConfigFile,
-                };
+                throw new ConfigFileNotFoundException(ConfigFile);
             }
         }
     }

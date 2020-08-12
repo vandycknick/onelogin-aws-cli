@@ -18,9 +18,9 @@ namespace OneloginAwsCli.Api
         private readonly HttpClient _client;
         private readonly JsonSerializerOptions _options;
 
-        private OneLoginToken _internalToken { get; set; }
-        private DateTime _expires { get; set; } = DateTime.UtcNow;
-        public OneLoginCredentials Credentials { get; set; }
+        private OneLoginToken? _internalToken;
+        private DateTime _expires = DateTime.UtcNow;
+        public OneLoginCredentials? Credentials { get; set; }
         public string Region { get; set; } = "us";
 
         public OneLoginClient(HttpClient client)
@@ -37,6 +37,11 @@ namespace OneloginAwsCli.Api
         // https://developers.onelogin.com/api-docs/1/oauth20-tokens/generate-tokens
         public async Task<OneLoginToken> GenerateTokens()
         {
+            if (Credentials is null)
+            {
+                throw new InvalidOperationException("No credentials provided!");
+            }
+
             var body = JsonSerializer.Serialize(new { GrantType = "client_credentials" }, _options);
 
             var message = new HttpRequestMessage
@@ -63,7 +68,7 @@ namespace OneloginAwsCli.Api
             // request in flight. Although doesn't really matter for the way I'm using it
             await _refreshSyncLock.WaitAsync();
 
-            if (_internalToken == null || DateTime.Now > _expires)
+            if (_internalToken is null || DateTime.Now > _expires)
             {
                 _internalToken = await GenerateTokens();
                 _expires = _internalToken.CreatedAt.ToUniversalTime().AddSeconds(_internalToken.ExpiresIn);
@@ -95,7 +100,7 @@ namespace OneloginAwsCli.Api
             return result;
         }
 
-        public async Task<FactorResponse> VerifyFactor(string appId, int deviceId, string stateToken, string otpToken = null)
+        public async Task<FactorResponse> VerifyFactor(string appId, int deviceId, string stateToken, string? otpToken = null)
         {
             await RefreshInternalToken();
 

@@ -21,7 +21,7 @@ namespace OneloginAwsCli.Api.Exceptions
         /// </summary>
         /// <param name="message">Error response from the server</param>
         /// <param name="innerException">The inner exception</param>
-        public NotFoundException(string message, Exception innerException) : base(message, HttpStatusCode.NotFound, innerException)
+        public NotFoundException(string message, Exception? innerException) : base(message, HttpStatusCode.NotFound, innerException)
         {
 
         }

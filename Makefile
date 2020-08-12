@@ -3,7 +3,7 @@
 ARTIFACTS 		:= $(shell pwd)/artifacts
 BUILD			:= $(shell pwd)/.build
 CONFIGURATION	:= Release
-CLI_PROJECT		:= src/OneloginAwsCli/OneloginAwsCli.csproj
+CLI_PROJECT		:= src/onelogin-aws/onelogin-aws.csproj
 CLI_TOOL		:= onelogin-aws
 RUNTIME 		:= $(shell uname -s | awk '{print tolower($$0)}' | sed "s/darwin/osx/")-x64
 

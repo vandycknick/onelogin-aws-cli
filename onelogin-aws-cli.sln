@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C1C4C7F3-996D-4801-8AF9-A2D86C38BA12}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneloginAwsCli", "src\OneloginAwsCli\OneloginAwsCli.csproj", "{91E01029-98C0-49A6-8B7A-D7211C2A104C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "onelogin-aws", "src\onelogin-aws\onelogin-aws.csproj", "{91E01029-98C0-49A6-8B7A-D7211C2A104C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

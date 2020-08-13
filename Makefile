@@ -1,11 +1,12 @@
-.DEFAULT_GOAL 	:= default
+.DEFAULT_GOAL 		:= default
 
-ARTIFACTS 		:= $(shell pwd)/artifacts
-BUILD			:= $(shell pwd)/.build
-CONFIGURATION	:= Release
-CLI_PROJECT		:= src/onelogin-aws/onelogin-aws.csproj
-CLI_TOOL		:= onelogin-aws
-RUNTIME 		:= $(shell uname -s | awk '{print tolower($$0)}' | sed "s/darwin/osx/")-x64
+ARTIFACTS 			:= $(shell pwd)/artifacts
+BUILD				:= $(shell pwd)/.build
+CONFIGURATION		:= Release
+CLI_PROJECT			:= src/onelogin-aws/onelogin-aws.csproj
+CLI_TEST_PROJECT	:= test/OneLoginAws.Test/OneLoginAws.Test.csproj
+CLI_TOOL			:= onelogin-aws
+RUNTIME 			:= $(shell uname -s | awk '{print tolower($$0)}' | sed "s/darwin/osx/")-x64
 
 .PHONY: default
 default: package
@@ -23,6 +24,10 @@ restore:
 .PHONY: restore
 build: restore
 	dotnet build --configuration $(CONFIGURATION) --no-restore $(CLI_PROJECT)
+
+.PHONY: test
+test:
+	dotnet test $(CLI_TEST_PROJECT)
 
 .PHONY: package
 package: restore build
@@ -43,7 +48,7 @@ package-native:
 	@echo "\033[0;32mPackaging native \033[0m"
 	@echo "\033[0;32m------------------- \033[0m"
 
-	dotnet publish --runtime $(RUNTIME) \
+	dotnet publish $(CLI_PROJECT) --runtime $(RUNTIME) \
 		--configuration $(CONFIGURATION) \
 		--self-contained true \
 		--nologo \

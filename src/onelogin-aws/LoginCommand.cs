@@ -181,11 +181,14 @@ namespace OneLoginAws
                 .UseDefaults()
                 .UseFromEnvironment()
                 .UseConfigName(configName)
-                .UseCommandLineOverrides(profile, username, region);
+                .UseUsername(username)
+                .UseProfile(profile)
+                .UseRegion(region);
 
             if (_console.IsInputRedirected)
             {
-                _settingsBuilder.UseFromJsonInput(_console.In);
+                var line = _console.In.ReadLine();
+                _settingsBuilder.UseFromJson(line);
             }
 
             var settings = _settingsBuilder.Build();

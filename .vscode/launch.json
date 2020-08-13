@@ -10,9 +10,9 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/src/OneloginAwsCli/bin/Debug/net5.0/OneloginAwsCli.dll",
+            "program": "${workspaceFolder}/.build/bin/onelogin-aws/Debug/net5.0/onelogin-aws.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/src/OneloginAwsCli",
+            "cwd": "${workspaceFolder}/src/onelogin-aws",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false

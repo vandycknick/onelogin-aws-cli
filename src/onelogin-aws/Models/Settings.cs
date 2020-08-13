@@ -24,8 +24,8 @@ namespace OneLoginAws.Models
         public Uri? BaseUri { get; }
         public string Subdomain { get; }
         public string? Username { get; }
-        internal string? Password { get; } // Only used internally, not exposed via config setting.
-        internal string? OTP { get; } // Only used internally, not exposed via config setting.
+        public string? Password { get; } // Only used internally, not exposed via config setting.
+        public string? OTP { get; } // Only used internally, not exposed via config setting.
         public string? OTPDeviceId { get; }
         public string ClientId { get; }
         public string ClientSecret { get; }

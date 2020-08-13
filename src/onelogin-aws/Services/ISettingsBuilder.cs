@@ -7,13 +7,11 @@ namespace OneLoginAws.Services
     {
         SettingsBuilder UseDefaults();
 
-        SettingsBuilder UseCommandLineOverrides(string profile, string userName, string region);
-
         SettingsBuilder UseConfigName(string name);
 
         SettingsBuilder UseFromEnvironment();
 
-        SettingsBuilder UseFromJsonInput(IStandardStreamReader reader);
+        SettingsBuilder UseFromJson(string? reader);
 
         Settings Build();
     }

@@ -26,7 +26,7 @@ namespace OneLoginAws.Services
         {
             if (!file.Exists)
             {
-                throw new ConfigFileNotFoundException(file.Name);
+                throw new ConfigFileNotFoundException(ConfigFile);
             }
         }
 
@@ -87,10 +87,20 @@ namespace OneLoginAws.Services
             return this;
         }
 
-        public SettingsBuilder UseCommandLineOverrides(string? profile, string? userName, string? region)
+        public SettingsBuilder UseUsername(string? username)
+        {
+            _username = username ?? _username;
+            return this;
+        }
+
+        public SettingsBuilder UseProfile(string? profile)
         {
             _profile = profile ?? _profile;
-            _username = userName ?? _username;
+            return this;
+        }
+
+        public SettingsBuilder UseRegion(string? region)
+        {
             _region = region ?? _region;
             return this;
         }
@@ -127,10 +137,8 @@ namespace OneLoginAws.Services
             public string? OTP { get; set; }
         }
 
-        public SettingsBuilder UseFromJsonInput(IStandardStreamReader reader)
+        public SettingsBuilder UseFromJson(string? line)
         {
-            var line = reader.ReadLine();
-
             if (line is null)
             {
                 return this;

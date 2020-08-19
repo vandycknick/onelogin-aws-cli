@@ -14,7 +14,7 @@ Usage:
 
 Options:
   -p <profile> (REQUIRED)               AWS profile to use.
-  -n                                    Use prebuild dll (run `make package-native` first)
+  -n                                    Compiles a new version of the tool first
   -?, -h                                Show help and usage information"""
 }
 

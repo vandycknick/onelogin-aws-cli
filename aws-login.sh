@@ -2,8 +2,8 @@
 set -o pipefail -o noclobber -o nounset
 
 PROFILE=""
-NATIVE=""
-ITEM='OneLogin DataCamp'
+COMPILE=""
+ITEM='<item name>'
 
 function show_help {
     echo """aws-login:
@@ -40,16 +40,16 @@ function login {
 
     OS=$(uname -s | awk '{print tolower($0)}' | sed "s/darwin/osx/")
 
-    if [ -z "$NATIVE" ]; then
-        EXE="dotnet run -p src/OneloginAwsCli --"
-    else
+    if [ -z "$COMPILE" ]; then
         EXE="./artifacts/$OS-x64/onelogin-aws"
+    else
+        EXE="dotnet run -p src/OneloginAwsCli --"
     fi
 
     (echo $CREDS && cat) | ($EXE login --profile $PROFILE && echo "Press Enter to exit.")
 }
 
-while getopts "h?np:" opt; do
+while getopts "h?bp:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -58,8 +58,8 @@ while getopts "h?np:" opt; do
     p)
         PROFILE=$OPTARG
         ;;
-    n)
-        NATIVE="yes"
+    b)
+        COMPILE="yes"
         ;;
     esac
 done

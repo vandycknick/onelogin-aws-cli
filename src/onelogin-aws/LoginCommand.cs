@@ -30,7 +30,7 @@ namespace OneLoginAws
             var command = new Command("login")
             {
                 new Option(
-                    new string[] { "-C", "--config-name"}
+                    new string[] { "-C", "-c", "--config-name"}
                 )
                 {
                     Argument = new Argument<string>()

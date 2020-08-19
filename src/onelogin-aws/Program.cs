@@ -12,7 +12,7 @@ using OneLoginAws.Exceptions;
 
 namespace OneLoginAws
 {
-    static partial class Program
+    public static class Program
     {
         static Task Main(string[] args)
         {

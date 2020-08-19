@@ -17,10 +17,7 @@ namespace OneLoginAws.Services
     {
         private const string CONFIG_FILE_NAME = ".onelogin-aws.config";
 
-        public static string ConfigFile
-        {
-            get => Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), CONFIG_FILE_NAME);
-        }
+        public static string ConfigFile => Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), CONFIG_FILE_NAME);
 
         public static void ThrowIfConfigFileMissing(IFileInfo file)
         {
@@ -47,7 +44,7 @@ namespace OneLoginAws.Services
         }
 
         private readonly IniData _iniConfigFile;
-        private Uri? _baseUri;
+        private string? _baseUri;
         private string? _subdomain;
         private string? _username;
         private string? _password;
@@ -56,7 +53,7 @@ namespace OneLoginAws.Services
         private string? _clientId;
         private string? _clientSecret;
         private string? _profile;
-        private string? _durationSeconds;
+        private string _durationSeconds = "3600";
         private string? _awsAppId;
         private string? _roleARN;
         private string? _region;
@@ -111,11 +108,7 @@ namespace OneLoginAws.Services
 
             var data = _iniConfigFile[name];
 
-            if (data["base_uri"] != null)
-            {
-                _baseUri = new Uri(data["base_uri"]);
-            }
-
+            _baseUri = data["base_uri"] ?? _baseUri;
             _subdomain = data["subdomain"] ?? _subdomain;
             _username = data["username"] ?? _username;
             _otpDeviceId = data["otp_device_id"] ?? _otpDeviceId;
@@ -157,9 +150,9 @@ namespace OneLoginAws.Services
 
         public Settings Build()
         {
-            if (string.IsNullOrEmpty(_clientId) || string.IsNullOrEmpty(_clientSecret) ||
-                string.IsNullOrEmpty(_subdomain) || string.IsNullOrEmpty(_awsAppId) ||
-                string.IsNullOrEmpty(_durationSeconds) || string.IsNullOrEmpty(_profile)
+            if (string.IsNullOrEmpty(_baseUri) || string.IsNullOrEmpty(_clientId) ||
+                string.IsNullOrEmpty(_clientSecret) || string.IsNullOrEmpty(_subdomain) ||
+                string.IsNullOrEmpty(_awsAppId) || string.IsNullOrEmpty(_profile)
             )
             {
                 ThrowMissingRequiredSettingsException();
@@ -185,11 +178,11 @@ namespace OneLoginAws.Services
         [DoesNotReturn]
         public void ThrowMissingRequiredSettingsException() =>
             throw new MissingRequiredSettingsException(
+                baseUri: _baseUri,
                 subdomain: _subdomain,
                 clientId: _clientId,
                 clientSecret: _clientSecret,
                 profile: _profile,
-                durationSeconds: _durationSeconds,
                 awsAppId: _awsAppId
             );
     }

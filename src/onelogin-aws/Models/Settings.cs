@@ -5,7 +5,7 @@ namespace OneLoginAws.Models
     public class Settings
     {
         public Settings(
-            Uri? baseUri, string subdomain, string? username, string? password,
+            string baseUri, string subdomain, string? username, string? password,
             string? otp, string? otpDeviceId, string clientId, string clientSecret,
             string profile, string durationSeconds, string awsAppId,
             string? roleArn, string? region) =>
@@ -21,7 +21,7 @@ namespace OneLoginAws.Models
                 roleArn, region
             );
 
-        public Uri? BaseUri { get; }
+        public string BaseUri { get; }
         public string Subdomain { get; }
         public string? Username { get; }
         public string? Password { get; } // Only used internally, not exposed via config setting.

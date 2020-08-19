@@ -1,4 +1,4 @@
-namespace OneLoginAws.Api.Models
+namespace OneLoginApi.Models
 {
     public class FactorResponse
     {

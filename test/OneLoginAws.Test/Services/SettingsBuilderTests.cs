@@ -338,22 +338,22 @@ namespace OneLoginAws.Test.Services
                 .ToDictionary(key => key,
                  key => new Dictionary<string, bool>
                  {
-                    { "ClientId", (key >> 5 & 1) != 0 },
-                    { "ClientSecret", (key >> 4 & 1) != 0 },
-                    { "Subdomain", (key >> 3 & 1) != 0 },
-                    { "AwsAppId", (key >> 2 & 1) != 0 },
-                    { "DurationSeconds", (key >> 1 & 1) != 0 },
+                    { "BaseUri", (key >> 5 & 1) != 0 },
+                    { "ClientId", (key >> 4 & 1) != 0 },
+                    { "ClientSecret", (key >> 3 & 1) != 0 },
+                    { "Subdomain", (key >> 2 & 1) != 0 },
+                    { "AwsAppId", (key >> 1 & 1) != 0 },
                     { "Profile", (key >> 0 & 1) != 0 },
                  });
 
             static string PropToSettingsKey(string prop) =>
                 prop switch
                 {
+                    "BaseUri" => "base_uri",
                     "ClientId" => "client_id",
                     "ClientSecret" => "client_secret",
                     "Subdomain" => "subdomain",
                     "AwsAppId" => "aws_app_id",
-                    "DurationSeconds" => "duration_seconds",
                     "Profile" => "profile",
                     _ => throw new NotImplementedException(),
                 };

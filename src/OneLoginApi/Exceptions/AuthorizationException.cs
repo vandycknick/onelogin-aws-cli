@@ -1,13 +1,23 @@
 using System;
 using System.Net;
+using OneLoginApi.Models;
 
-namespace OneLoginAws.Api.Exceptions
+namespace OneLoginApi.Exceptions
 {
     /// <summary>
     /// Represents a HTTP 401 - Unauthorized response returned from the API.
     /// </summary>
     public class AuthorizationException : ApiException
     {
+        /// <summary>
+        /// Constructs an instance of AuthorizationException
+        /// </summary>
+        /// <param name="error">The error returned from the api</param>
+        public AuthorizationException(ApiError error) : this(error.Message)
+        {
+            Error = error;
+        }
+
         /// <summary>
         /// Constructs an instance of AuthorizationException
         /// </summary>

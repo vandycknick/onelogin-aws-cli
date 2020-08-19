@@ -5,6 +5,7 @@ BUILD				:= $(shell pwd)/.build
 CONFIGURATION		:= Release
 CLI_PROJECT			:= src/onelogin-aws/onelogin-aws.csproj
 CLI_TEST_PROJECT	:= test/OneLoginAws.Test/OneLoginAws.Test.csproj
+API_TEST_PROJECT	:= test/OneLoginApi.Test/OneLoginApi.Test.csproj
 CLI_TOOL			:= onelogin-aws
 RUNTIME 			:= $(shell uname -s | awk '{print tolower($$0)}' | sed "s/darwin/osx/")-x64
 
@@ -27,6 +28,7 @@ build: restore
 
 .PHONY: test
 test:
+	dotnet test $(API_TEST_PROJECT)
 	dotnet test $(CLI_TEST_PROJECT)
 
 .PHONY: package

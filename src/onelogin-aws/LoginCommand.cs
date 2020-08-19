@@ -6,7 +6,6 @@ using System.CommandLine.Parsing;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -14,9 +13,8 @@ using Amazon.Runtime;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
 using IniParser;
-using OneLoginAws.Api;
-using OneLoginAws.Api.Exceptions;
-using OneLoginAws.Api.Models;
+using OneLoginApi.Exceptions;
+using OneLoginApi.Models;
 using OneLoginAws.Console;
 using OneLoginAws.Extensions;
 using OneLoginAws.Models;
@@ -84,7 +82,7 @@ namespace OneLoginAws
 
             command.Handler = CommandHandler.Create<string, string, string, string>((profile, configName, region, username) =>
             {
-                var client = new OneLoginClient(new HttpClient());
+                var client = new OneLoginClientFactory();
                 var fileSystem = new FileSystem();
                 var builder = new SettingsBuilder(fileSystem);
                 var handler = new LoginCommand(client, new SystemConsole(), builder);
@@ -98,7 +96,7 @@ namespace OneLoginAws
         private const string AWS_CONFIG_FILE = ".aws/credentials";
         private static readonly Encoding _utf8WithoutBom = new UTF8Encoding(false);
 
-        private readonly IOneLoginClient _client;
+        private readonly IOneLoginClientFactory _oneLoginClientFactory;
         private readonly IConsole _console;
         private readonly ISettingsBuilder _settingsBuilder;
         private readonly AnsiStringBuilder _ansiBuilder;
@@ -110,9 +108,9 @@ namespace OneLoginAws
         private readonly string _question;
         private readonly string _pointer;
 
-        public LoginCommand(IOneLoginClient client, IConsole console, ISettingsBuilder settingsBuilder)
+        public LoginCommand(IOneLoginClientFactory oneLoginClientFactory, IConsole console, ISettingsBuilder settingsBuilder)
         {
-            _client = client;
+            _oneLoginClientFactory = oneLoginClientFactory;
             _console = console;
             _settingsBuilder = settingsBuilder;
 
@@ -194,10 +192,8 @@ namespace OneLoginAws
             var settings = _settingsBuilder.Build();
             (username, password, otp, otpDeviceId) = settings;
 
-            _client.Credentials = new OneLoginCredentials(
-                clientId: settings.ClientId,
-                clientSecret: settings.ClientSecret
-            );
+            var apiRegion = settings.BaseUri.Split(".").ElementAt(1);
+            var client = _oneLoginClientFactory.Create(settings.ClientId, settings.ClientSecret, apiRegion);
 
             if (string.IsNullOrEmpty(username))
             {
@@ -235,7 +231,7 @@ namespace OneLoginAws
                 using (var spinner = _console.RenderSpinner(true))
                 {
                     _console.Write("  Requesting SAML assertion");
-                    var samlResponse = await _client.GenerateSamlAssertion(
+                    var samlResponse = await client.SAML.GenerateSamlAssertion(
                         usernameOrEmail: username,
                         password: password,
                         appId: settings.AwsAppId,
@@ -259,7 +255,7 @@ namespace OneLoginAws
                             otp = _console.Input<string>("OTP Token:");
                         }
 
-                        var factor = await _client.VerifyFactor(
+                        var factor = await client.SAML.VerifyFactor(
                             appId: settings.AwsAppId,
                             deviceId: device.DeviceId,
                             stateToken: samlResponse.StateToken,

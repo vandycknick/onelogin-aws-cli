@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
-namespace OneLoginAws.Api.Models
+namespace OneLoginApi.Models
 {
     public class SAMLResponse
     {

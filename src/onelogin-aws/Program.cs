@@ -7,7 +7,7 @@ using System.CommandLine.Parsing;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
-using OneLoginAws.Api.Exceptions;
+using OneLoginApi.Exceptions;
 using OneLoginAws.Exceptions;
 
 namespace OneLoginAws
@@ -43,6 +43,10 @@ namespace OneLoginAws
                 context.Console.Error.WriteLine("Missing required setting!");
                 context.Console.Error.WriteLine();
 
+                if (string.IsNullOrEmpty(required.BaseUri))
+                {
+                    context.Console.Error.WriteLine("No base_uri provided, please provide a valid base uri for the OneLogin Api.");
+                }
                 if (string.IsNullOrEmpty(required.Profile))
                 {
                     context.Console.Error.WriteLine("No profile provided, please specify a profile either via the config file an environment variable ONELOGIN_AWS_CLI_PROFILE or as a command line flag --profile.");
@@ -59,10 +63,6 @@ namespace OneLoginAws
                 {
                     context.Console.Error.WriteLine("A valid subdomain is required! Please add it to your config file.");
                 }
-                else if (string.IsNullOrEmpty(required.DurationSeconds))
-                {
-                    context.Console.Error.WriteLine("No duration_seconds found, please ad it to your config file or use an environment variable `ONELOGIN_AWS_CLI_DURATION_SECONDS`");
-                }
             }
             else if (exception is ConfigFileNotFoundException configNotFound)
             {
@@ -71,16 +71,16 @@ namespace OneLoginAws
             }
             else if (exception is AuthorizationException auth)
             {
-                context.Console.Error.WriteLine(auth.ApiError.Message);
+                context.Console.Error.WriteLine(auth.Message);
             }
             else if (exception is NotFoundException notFound)
             {
-                context.Console.Error.WriteLine($"OneLogin Error ({notFound.StatusCode}): {notFound.ApiError.Message}");
+                context.Console.Error.WriteLine($"OneLogin Error ({notFound.StatusCode}): {notFound.Message}");
             }
             else if (exception is ApiException api)
             {
                 context.Console.Error.WriteLine($"Oh no, a OneLogin api exception ({api.StatusCode}):");
-                context.Console.Error.WriteLine($"ApiError: {JsonSerializer.Serialize(api.ApiError)}");
+                context.Console.Error.WriteLine($"ApiError: {JsonSerializer.Serialize(api.Error)}");
                 context.Console.Error.WriteLine();
                 context.Console.Error.WriteLine($"Exception:");
                 context.Console.Error.WriteLine(api.ToString());

@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 
-namespace OneLoginAws.Api.Models
+namespace OneLoginApi.Models
 {
-    public class OneLoginToken
+    public class OAuthTokens
     {
         public string AccessToken { get; set; } = null!;
         public DateTime CreatedAt { get; set; }

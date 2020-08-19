@@ -4,8 +4,8 @@ namespace OneLoginAws.Exceptions
 {
     public class MissingRequiredSettingsException : Exception
     {
-        public MissingRequiredSettingsException(string? subdomain, string? clientId, string? clientSecret, string? profile, string? durationSeconds, string? awsAppId) : base() =>
-            (Subdomain, ClientId, ClientSecret, Profile, DurationSeconds, AwsAppId) = (subdomain, clientId, clientSecret, profile, durationSeconds, awsAppId);
+        public MissingRequiredSettingsException(string? baseUri, string? subdomain, string? clientId, string? clientSecret, string? profile, string? awsAppId) : base() =>
+            (BaseUri, Subdomain, ClientId, ClientSecret, Profile, AwsAppId) = (baseUri, subdomain, clientId, clientSecret, profile, awsAppId);
         public MissingRequiredSettingsException() : base()
         {
         }
@@ -18,11 +18,11 @@ namespace OneLoginAws.Exceptions
         {
         }
 
+        public string? BaseUri { get; set; }
         public string? Subdomain {get; }
         public string? ClientId { get; }
         public string? ClientSecret { get; }
         public string? Profile { get; }
-        public string? DurationSeconds { get; }
         public string? AwsAppId { get; }
     }
 }

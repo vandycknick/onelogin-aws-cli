@@ -1,10 +1,29 @@
 <Project>
 
     <PropertyGroup>
-        <BuildDirectory>$(MSBuildThisFileDirectory).build/</BuildDirectory>
-        <BaseIntermediateOutputPath>$(BuildDirectory)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-        <BaseOutputPath>$(BuildDirectory)bin/$(MSBuildProjectName)/</BaseOutputPath>
+      <Authors>Nick Van Dyck</Authors>
+      <Product>onelogin-aws</Product>
+      <Description>A CLI tool that simplifies using the AWS CLI in conjunction with OneLogin authentication.</Description>
+      <Copyright>Copyright © Nick Van Dyck</Copyright>
+      <NeutralLanguage>en-GB</NeutralLanguage>
+      <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+      <PackageLicenseFile>LICENSE</PackageLicenseFile>
+      <PackageProjectUrl>https://github.com/nickvdyck/onelogin-aws-cli</PackageProjectUrl>
+      <RepositoryUrl>https://github.com/nickvdyck/onelogin-aws-cli.git</RepositoryUrl>
+      <PackageReleaseNotes>See $(PackageProjectUrl)/blob/master/CHANGELOG.md for release notes.</PackageReleaseNotes>
+      <RepositoryType>git</RepositoryType>
+
+      <BuildDirectory>$(MSBuildThisFileDirectory).build/</BuildDirectory>
+      <BaseIntermediateOutputPath>$(BuildDirectory)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+      <BaseOutputPath>$(BuildDirectory)bin/$(MSBuildProjectName)/</BaseOutputPath>
+
+      <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+      <MinVerTagPrefix>v</MinVerTagPrefix>
     </PropertyGroup>
+
+    <ItemGroup>
+      <None Include="$(MSBuildThisFileDirectory)/LICENSE" Pack="true" Visible="false" PackagePath=""/>
+    </ItemGroup>
 
     <ItemGroup Condition="$(IsPackable) == 'true'">
       <PackageReference Include="MinVer" Version="2.3.0">

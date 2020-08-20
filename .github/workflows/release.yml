@@ -55,7 +55,7 @@ jobs:
         cp osx-x64/onelogin-aws release/onelogin-aws-osx-x64
         chmod +x release/onelogin-aws-osx-x64
         cp *.nupkg release
-        cd release && sha256sum * > SHA256SUMS.txt
+        cd release && sha256sum * > checksums.txt
 
     - uses: actions/upload-artifact@v2
       with:

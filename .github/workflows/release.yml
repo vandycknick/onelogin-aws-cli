@@ -63,7 +63,7 @@ jobs:
         path: release
 
     - name: Push to feedz.io
-      run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.FEEDZ_IO_TOKEN }} --source https://f.feedz.io/nvd/onelogin-aws-cli/nuget/index.json --skip-duplicate
+      run: dotnet nuget push release/*.nupkg --api-key ${{ secrets.FEEDZ_IO_TOKEN }} --source https://f.feedz.io/nvd/onelogin-aws-cli/nuget/index.json --skip-duplicate
 
     # - name: Push to nuget
     #   run: dotnet nuget push artifacts/**/*.nupkg --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -67,13 +67,6 @@ jobs:
         cp *.nupkg release
         cd release && sha256sum * > SHA256SUMS.txt
 
-    - name: Create Release
-      shell: bash
-      run: |
-        go env
-        go get -u github.com/tcnksm/ghr
-        ghr -t ${{ secrets.GITHUB_TOKEN }} -b 'onelogin-aws release.' ${{ steps.get_version.outputs.VERSION }} ./release/
-
     - name: Push to feedz.io
       run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.FEEDZ_IO_TOKEN }} --source https://f.feedz.io/nvd/onelogin-aws-cli/nuget/index.json --skip-duplicate
 

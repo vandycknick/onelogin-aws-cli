@@ -281,21 +281,33 @@ namespace OneLoginAws
             var decodedString = Encoding.UTF8.GetString(data);
 
             var roles = GetIAMRoleArns(decodedString);
-            var role = _console.Select(
-                message: "Choose a role:",
-                items: roles,
-                onRenderItem: (iam, selected) => iam.Role,
-                indent: 2
-            );
+            IAMRole? role = null;
 
-            _console.WriteLine(
-                _ansiBuilder
-                    .Clear()
-                    .EraseLines(2)
-                    .Write($"{_success} Choose a role: ")
-                    .Cyan(role.Role)
-                    .ToString()
-            );
+            if (string.IsNullOrEmpty(settings.RoleARN))
+            {
+                role = _console.Select(
+                    message: "Choose a role:",
+                    items: roles,
+                    onRenderItem: (iam, selected) => iam.Role,
+                    indent: 2
+                );
+
+                _console.WriteLine(
+                    _ansiBuilder
+                        .Clear()
+                        .EraseLines(2)
+                        .Write($"{_success} Choose a role: ")
+                        .Cyan(role.Role)
+                        .ToString()
+                );
+            }
+            else
+            {
+                role = roles.Where(role => role.Role == settings.RoleARN).FirstOrDefault();
+            }
+
+            // TODO: this ain't great 🤔
+            if (role == null) throw new Exception("Invalid role provided!");
 
             var expires = DateTime.UtcNow;
             using (var spinner = _console.RenderSpinner(true))
@@ -320,9 +332,9 @@ namespace OneLoginAws
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)
                 );
 
-                awsConfig[profile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
-                awsConfig[profile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
-                awsConfig[profile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
+                awsConfig[settings.Profile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
+                awsConfig[settings.Profile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
+                awsConfig[settings.Profile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
 
                 parser.WriteFile(
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE),
@@ -334,7 +346,7 @@ namespace OneLoginAws
             _console.WriteLine($"{_success} Saving credentials:");
             _console.WriteLine($"  {_pointer} Credentials cached in '{Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)}'");
             _console.WriteLine($"  {_pointer} Expires at {expires.ToLocalTime():yyyy-MM-dd H:mm:sszzz}");
-            _console.WriteLine($"  {_pointer} Use aws cli with --profile {profile}");
+            _console.WriteLine($"  {_pointer} Use aws cli with --profile {settings.Profile}");
         }
     }
 

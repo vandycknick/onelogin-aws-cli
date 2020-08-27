@@ -43,7 +43,7 @@ function login {
     if [ -z "$COMPILE" ]; then
         EXE="./artifacts/$OS-x64/onelogin-aws"
     else
-        EXE="dotnet run -p src/OneloginAwsCli --"
+        EXE="dotnet run -p src/onelogin-aws --"
     fi
 
     (echo $CREDS && cat) | ($EXE login --profile $PROFILE && echo "Press Enter to exit.")

@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using OneLoginApi.Exceptions;
@@ -42,10 +43,10 @@ namespace OneLoginApi.Clients
 
             try
             {
-                error = await response.ReadAsAsync<ApiError>(_errorOptions);
+                error = await response.Content.ReadFromJsonAsync<ApiError>(_errorOptions) ?? error;
             }
             catch (Exception)
-            {}
+            { }
 
             throw response.StatusCode switch
             {

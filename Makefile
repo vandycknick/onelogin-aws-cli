@@ -50,6 +50,7 @@ package-native:
 	@echo "\033[0;32mPackaging native \033[0m"
 	@echo "\033[0;32m------------------- \033[0m"
 
+	# https://github.com/dotnet/designs/blob/main/accepted/2020/single-file/design.md
 	dotnet publish $(CLI_PROJECT) --runtime $(RUNTIME) \
 		--configuration $(CONFIGURATION) \
 		--self-contained true \
@@ -57,4 +58,4 @@ package-native:
 		--output $(ARTIFACTS)/$(RUNTIME) \
 		-p:PublishSingleFile=true \
 		-p:PublishTrimmed=true \
-		-p:IncludeNativeLibrariesInSingleFile=true
+		-p:IncludeNativeLibrariesForSelfExtract=true

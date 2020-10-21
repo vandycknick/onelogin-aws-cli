@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -48,7 +49,13 @@ namespace OneLoginApi.Clients
 
             await EnsureApiRequestSuccess(response);
 
-            var result = await response.ReadAsAsync<OAuthTokens>(_options);
+            var result = await response.Content.ReadFromJsonAsync<OAuthTokens>(_options);
+
+            if (result is null)
+            {
+                throw new ApiException("Empty authorization tokens returned from server.", HttpStatusCode.BadRequest);
+            }
+
             return result;
         }
 
@@ -70,11 +77,11 @@ namespace OneLoginApi.Clients
 
             try
             {
-                var wrapped = await response.ReadAsAsync<WrappedApiError>(_errorOptions);
+                var wrapped = await response.Content.ReadFromJsonAsync<WrappedApiError>(_errorOptions);
 
-                error.Name = wrapped.Status.GetProperty("type").GetString() ?? "";
-                error.StatusCode = wrapped.Status.GetProperty("code").GetInt32();
-                error.Message = wrapped.Status.GetProperty("message").GetString() ?? "";
+                error.Name = wrapped?.Status.GetProperty("type").GetString() ?? "";
+                error.StatusCode = wrapped?.Status.GetProperty("code").GetInt32() ?? 0;
+                error.Message = wrapped?.Status.GetProperty("message").GetString() ?? "";
             }
             catch (Exception)
             { }

@@ -31,22 +31,19 @@ function login {
         exit 1
     fi
 
-    USERNAME=$(echo $DATA | jq '.details.fields[] | select(.name == "email") | .value')
-    PASSWORD=$(echo $DATA | jq '.details.fields[] | select(.name == "password") | .value')
-
+    USERNAME=$(echo $DATA | jq -r '.details.fields[] | select(.name == "email") | .value')
+    PASSWORD=$(echo $DATA | jq -r '.details.fields[] | select(.name == "password") | .value')
     OTP=$(op get totp "$ITEM")
 
-    CREDS="{ \"username\": $USERNAME, \"password\": $PASSWORD, \"otp\": \"$OTP\" }"
-
-    OS=$(uname -s | awk '{print tolower($0)}' | sed "s/darwin/osx/")
-
     if [ -z "$COMPILE" ]; then
+        OS=$(uname -s | awk '{print tolower($0)}' | sed "s/darwin/osx/")
         EXE="./artifacts/$OS-x64/onelogin-aws"
     else
         EXE="dotnet run -p src/onelogin-aws --"
     fi
 
-    (echo $CREDS && cat) | ($EXE login --profile $PROFILE && echo "Press Enter to exit.")
+    (jo username=$USERNAME password=$PASSWORD -s otp=$OTP && cat) | \
+        ($EXE login --profile $PROFILE && echo "Press Enter to exit.")
 }
 
 while getopts "h?bp:" opt; do

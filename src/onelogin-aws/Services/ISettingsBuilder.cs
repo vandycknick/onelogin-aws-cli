@@ -1,4 +1,3 @@
-using OneLoginAws.Console;
 using OneLoginAws.Models;
 
 namespace OneLoginAws.Services

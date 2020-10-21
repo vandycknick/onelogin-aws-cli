@@ -134,15 +134,22 @@ namespace OneLoginAws
             m.AddNamespace("saml", "urn:oasis:names:tc:SAML:2.0:assertion");
 
             var nodes = document.SelectNodes("/samlp:Response/saml:Assertion/saml:AttributeStatement/saml:Attribute[@Name='https://aws.amazon.com/SAML/Attributes/Role']/saml:AttributeValue", m);
+
+            if (nodes == null) return roles;
+
             for (var i = 0; i < nodes.Count; i++)
             {
                 var node = nodes[i];
-                var parts = node.InnerText.Trim().Split(',');
-                var role = new IAMRole(
-                    role: parts[0],
-                    principal: parts[1]
-                );
-                roles.Add(role);
+
+                if (node != null)
+                {
+                    var parts = node.InnerText.Trim().Split(',');
+                    var role = new IAMRole(
+                        Role: parts[0],
+                        Principal: parts[1]
+                    );
+                    roles.Add(role);
+                }
             }
 
             return roles;

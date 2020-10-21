@@ -1,9 +1,11 @@
 using System;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using OneLoginApi.Helpers;
+using OneLoginApi.Exceptions;
 using OneLoginApi.Models;
 
 namespace OneLoginApi.Clients
@@ -59,7 +61,13 @@ namespace OneLoginApi.Clients
 
             await EnsureApiRequestSuccess(response);
 
-            var result = await response.ReadAsAsync<SAMLResponse>(_options);
+            var result = await response.Content.ReadFromJsonAsync<SAMLResponse>(_options);
+
+            if (result is null)
+            {
+                throw new ApiException("Empty saml response returned from server.", HttpStatusCode.BadRequest);
+            }
+
             return result;
         }
 
@@ -88,7 +96,13 @@ namespace OneLoginApi.Clients
 
             await EnsureApiRequestSuccess(response);
 
-            var result = await response.ReadAsAsync<FactorResponse>(_options);
+            var result = await response.Content.ReadFromJsonAsync<FactorResponse>(_options);
+
+            if (result is null)
+            {
+                throw new ApiException("Empty factor returned from server.", HttpStatusCode.BadRequest);
+            }
+
             return result;
         }
     }

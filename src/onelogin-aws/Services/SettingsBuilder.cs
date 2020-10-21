@@ -123,12 +123,7 @@ namespace OneLoginAws.Services
             return this;
         }
 
-        private class Credentials
-        {
-            public string? Username { get; set; }
-            public string? Password { get; set; }
-            public string? OTP { get; set; }
-        }
+        private record Credentials(string? Username, string? Password, string? OTP);
 
         public SettingsBuilder UseFromJson(string? line)
         {
@@ -158,21 +153,18 @@ namespace OneLoginAws.Services
                 ThrowMissingRequiredSettingsException();
             }
 
-            return new Settings(
-                baseUri: _baseUri,
-                subdomain: _subdomain,
-                username: _username,
-                password: _password,
-                otp: _otp,
-                otpDeviceId: _otpDeviceId,
-                clientId: _clientId,
-                clientSecret: _clientSecret,
-                profile: _profile,
-                durationSeconds: _durationSeconds,
-                awsAppId: _awsAppId,
-                roleArn: _roleARN,
-                region: _region
-            );
+            return new (
+                BaseUri: _baseUri, Subdomain: _subdomain, ClientId: _clientId,
+                ClientSecret: _clientSecret, Profile: _profile, DurationSeconds: _durationSeconds, AwsAppId: _awsAppId
+            )
+            {
+                Username = _username,
+                Password = _password,
+                OTP = _otp,
+                OTPDeviceId = _otpDeviceId,
+                RoleARN = _roleARN,
+                Region = _region,
+            };
         }
 
         [DoesNotReturn]

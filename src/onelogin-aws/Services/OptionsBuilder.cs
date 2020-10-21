@@ -13,7 +13,7 @@ using OneLoginAws.Models;
 
 namespace OneLoginAws.Services
 {
-    public class SettingsBuilder : ISettingsBuilder
+    public sealed class OptionsBuilder
     {
         private const string CONFIG_FILE_NAME = ".onelogin-aws.config";
 
@@ -58,7 +58,7 @@ namespace OneLoginAws.Services
         private string? _roleARN;
         private string? _region;
 
-        public SettingsBuilder(IFileSystem fileSystem)
+        public OptionsBuilder(IFileSystem fileSystem)
         {
             var file = fileSystem.FileInfo.FromFileName(ConfigFile);
 
@@ -69,9 +69,9 @@ namespace OneLoginAws.Services
             _iniConfigFile = parser.ReadData(reader);
         }
 
-        public SettingsBuilder UseDefaults() => UseConfigName("defaults");
+        public OptionsBuilder UseDefaults() => UseConfigName("defaults");
 
-        public SettingsBuilder UseFromEnvironment()
+        public OptionsBuilder UseFromEnvironment()
         {
             var configName = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_CONFIG_NAME");
 
@@ -84,25 +84,25 @@ namespace OneLoginAws.Services
             return this;
         }
 
-        public SettingsBuilder UseUsername(string? username)
+        public OptionsBuilder UseUsername(string? username)
         {
             _username = username ?? _username;
             return this;
         }
 
-        public SettingsBuilder UseProfile(string? profile)
+        public OptionsBuilder UseProfile(string? profile)
         {
             _profile = profile ?? _profile;
             return this;
         }
 
-        public SettingsBuilder UseRegion(string? region)
+        public OptionsBuilder UseRegion(string? region)
         {
             _region = region ?? _region;
             return this;
         }
 
-        public SettingsBuilder UseConfigName(string? name)
+        public OptionsBuilder UseConfigName(string? name)
         {
             if (string.IsNullOrEmpty(name)) return this;
 
@@ -125,7 +125,7 @@ namespace OneLoginAws.Services
 
         private record Credentials(string? Username, string? Password, string? OTP);
 
-        public SettingsBuilder UseFromJson(string? line)
+        public OptionsBuilder UseFromJson(string? line)
         {
             if (line is null)
             {
@@ -143,7 +143,7 @@ namespace OneLoginAws.Services
             return this;
         }
 
-        public Settings Build()
+        public Options Build()
         {
             if (string.IsNullOrEmpty(_baseUri) || string.IsNullOrEmpty(_clientId) ||
                 string.IsNullOrEmpty(_clientSecret) || string.IsNullOrEmpty(_subdomain) ||

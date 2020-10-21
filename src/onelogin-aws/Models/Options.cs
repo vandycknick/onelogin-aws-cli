@@ -1,6 +1,6 @@
-namespace OneLoginAws.Models
+﻿namespace OneLoginAws.Models
 {
-    public record Settings(string BaseUri, string Subdomain, string ClientId, string ClientSecret, string Profile, string DurationSeconds, string AwsAppId)
+    public record Options(string BaseUri, string Subdomain, string ClientId, string ClientSecret, string Profile, string DurationSeconds, string AwsAppId)
     {
         public string? Username { get; init; }
         public string? Password { get; init; } // Only used internally, not exposed via config setting.

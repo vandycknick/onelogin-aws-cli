@@ -11,16 +11,16 @@ using Xunit;
 
 namespace OneLoginAws.Test.Services
 {
-    public class SettingsBuilderTests
+    public class OptionsBuilderTests
     {
         [Fact]
-        public void SettingsBuilder_Ctor_ThrowsAConfigFileNotFoundExceptionWhenTheConfigFileIsNotFound()
+        public void OptionsBuilder_Ctor_ThrowsAConfigFileNotFoundExceptionWhenTheConfigFileIsNotFound()
         {
             // Given
             var mockFileSystem = new MockFileSystem();
 
             // When
-            var exception = Assert.Throws<ConfigFileNotFoundException>(() => new SettingsBuilder(mockFileSystem.Object));
+            var exception = Assert.Throws<ConfigFileNotFoundException>(() => new OptionsBuilder(mockFileSystem.Object));
 
             // Then
             Assert.Equal(
@@ -30,7 +30,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseDefaults_AddsValuesDefinedInDefaultsSection()
+        public void OptionsBuilder_UseDefaults_AddsValuesDefinedInDefaultsSection()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -38,7 +38,7 @@ namespace OneLoginAws.Test.Services
             mockFileSystem.AddFile(fileName, TestFileUno);
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .Build();
 
@@ -53,7 +53,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseConfigName_AddsValuesDefinedInTheGivenSection()
+        public void OptionsBuilder_UseConfigName_AddsValuesDefinedInTheGivenSection()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -61,7 +61,7 @@ namespace OneLoginAws.Test.Services
             mockFileSystem.AddFile(fileName, TestFileUno);
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseConfigName("my-profile")
                 .Build();
@@ -77,7 +77,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseEnvironment_AddsValuesFromConfigNameDefinedInEnvironment()
+        public void OptionsBuilder_UseEnvironment_AddsValuesFromConfigNameDefinedInEnvironment()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -87,7 +87,7 @@ namespace OneLoginAws.Test.Services
             Environment.SetEnvironmentVariable("ONELOGIN_AWS_CLI_CONFIG_NAME", "my-profile-env");
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseFromEnvironment()
                 .Build();
@@ -104,7 +104,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseEnvironment_AddsValuesDefinedInEnvironment()
+        public void OptionsBuilder_UseEnvironment_AddsValuesDefinedInEnvironment()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -116,7 +116,7 @@ namespace OneLoginAws.Test.Services
             Environment.SetEnvironmentVariable("ONELOGIN_AWS_CLI_DURATION_SECONDS", "2345");
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseFromEnvironment()
                 .Build();
@@ -137,7 +137,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseEnvironment_AddsValuesFromEnvVarsTakePriorityOverProfileNameEnvVar()
+        public void OptionsBuilder_UseEnvironment_AddsValuesFromEnvVarsTakePriorityOverProfileNameEnvVar()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -150,7 +150,7 @@ namespace OneLoginAws.Test.Services
             Environment.SetEnvironmentVariable("ONELOGIN_AWS_CLI_DURATION_SECONDS", "2345");
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseFromEnvironment()
                 .Build();
@@ -172,7 +172,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseUsername_AddsGivenUserName()
+        public void OptionsBuilder_UseUsername_AddsGivenUserName()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -180,7 +180,7 @@ namespace OneLoginAws.Test.Services
             mockFileSystem.AddFile(fileName, TestFileUno);
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseUsername("other-username")
                 .Build();
@@ -190,7 +190,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseProfile_AddsGivenProfile()
+        public void OptionsBuilder_UseProfile_AddsGivenProfile()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -198,7 +198,7 @@ namespace OneLoginAws.Test.Services
             mockFileSystem.AddFile(fileName, TestFileUno);
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseProfile("other-profile")
                 .Build();
@@ -208,7 +208,7 @@ namespace OneLoginAws.Test.Services
         }
 
         [Fact]
-        public void SettingsBuilder_UseRegion_AddsGivenRegion()
+        public void OptionsBuilder_UseRegion_AddsGivenRegion()
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -216,7 +216,7 @@ namespace OneLoginAws.Test.Services
             mockFileSystem.AddFile(fileName, TestFileUno);
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseRegion("other-region")
                 .Build();
@@ -227,7 +227,7 @@ namespace OneLoginAws.Test.Services
 
         [Theory]
         [MemberData(nameof(GetJsonStrings))]
-        public void SettingsBuilder_UseFromJsonInput_AddsValuesFromJsonString(string json, Dictionary<string, string> expected)
+        public void OptionsBuilder_UseFromJsonInput_AddsValuesFromJsonString(string json, Dictionary<string, string> expected)
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -235,7 +235,7 @@ namespace OneLoginAws.Test.Services
             mockFileSystem.AddFile(fileName, TestFileUno);
 
             // When
-            var settings = new SettingsBuilder(mockFileSystem.Object)
+            var settings = new OptionsBuilder(mockFileSystem.Object)
                 .UseDefaults()
                 .UseFromJson(json)
                 .Build();
@@ -250,7 +250,7 @@ namespace OneLoginAws.Test.Services
 
         [Theory]
         [MemberData(nameof(GetMissingRequiredSettingTestData))]
-        public void SettingsBuilder_Build_ThrowsAnExceptionWhenARequiredFieldIsNotSet(string file, Dictionary<string, bool> expected)
+        public void OptionsBuilder_Build_ThrowsAnExceptionWhenARequiredFieldIsNotSet(string file, Dictionary<string, bool> expected)
         {
             // Given
             var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
@@ -260,7 +260,7 @@ namespace OneLoginAws.Test.Services
             // When
             var exception = Assert.Throws<MissingRequiredSettingsException>(() =>
             {
-                var settings = new SettingsBuilder(mockFileSystem.Object)
+                var settings = new OptionsBuilder(mockFileSystem.Object)
                     .UseDefaults()
                     .Build();
             });

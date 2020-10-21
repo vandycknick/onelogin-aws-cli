@@ -84,7 +84,7 @@ namespace OneLoginAws
             {
                 var client = new OneLoginClientFactory();
                 var fileSystem = new FileSystem();
-                var builder = new SettingsBuilder(fileSystem);
+                var builder = new OptionsBuilder(fileSystem);
                 var handler = new LoginCommand(client, new SystemConsole(), builder);
 
                 return handler.InvokeAsync(profile, username, configName, region);
@@ -98,7 +98,7 @@ namespace OneLoginAws
 
         private readonly IOneLoginClientFactory _oneLoginClientFactory;
         private readonly IConsole _console;
-        private readonly ISettingsBuilder _settingsBuilder;
+        private readonly OptionsBuilder _appOptionsBuilder;
         private readonly AnsiStringBuilder _ansiBuilder;
 
         private readonly string _info;
@@ -108,11 +108,11 @@ namespace OneLoginAws
         private readonly string _question;
         private readonly string _pointer;
 
-        public LoginCommand(IOneLoginClientFactory oneLoginClientFactory, IConsole console, ISettingsBuilder settingsBuilder)
+        public LoginCommand(IOneLoginClientFactory oneLoginClientFactory, IConsole console, OptionsBuilder appOptionsBuilder)
         {
             _oneLoginClientFactory = oneLoginClientFactory;
             _console = console;
-            _settingsBuilder = settingsBuilder;
+            _appOptionsBuilder = appOptionsBuilder;
 
             _ansiBuilder = new AnsiStringBuilder();
             _info = _ansiBuilder.Clear().Blue("ℹ").ToString();
@@ -182,7 +182,7 @@ namespace OneLoginAws
         {
             string? password, otp, otpDeviceId;
 
-            _settingsBuilder
+            _appOptionsBuilder
                 .UseDefaults()
                 .UseFromEnvironment()
                 .UseConfigName(configName)
@@ -193,14 +193,14 @@ namespace OneLoginAws
             if (_console.IsInputRedirected)
             {
                 var line = _console.In.ReadLine();
-                _settingsBuilder.UseFromJson(line);
+                _appOptionsBuilder.UseFromJson(line);
             }
 
-            var settings = _settingsBuilder.Build();
-            (username, password, otp, otpDeviceId) = settings;
+            var appOptions = _appOptionsBuilder.Build();
+            (username, password, otp, otpDeviceId) = appOptions;
 
-            var apiRegion = settings.BaseUri.Split(".").ElementAt(1);
-            var client = _oneLoginClientFactory.Create(settings.ClientId, settings.ClientSecret, apiRegion);
+            var apiRegion = appOptions.BaseUri.Split(".").ElementAt(1);
+            var client = _oneLoginClientFactory.Create(appOptions.ClientId, appOptions.ClientSecret, apiRegion);
 
             if (string.IsNullOrEmpty(username))
             {
@@ -241,8 +241,8 @@ namespace OneLoginAws
                     var samlResponse = await client.SAML.GenerateSamlAssertion(
                         usernameOrEmail: username,
                         password: password,
-                        appId: settings.AwsAppId,
-                        subdomain: settings.Subdomain
+                        appId: appOptions.AwsAppId,
+                        subdomain: appOptions.Subdomain
                     );
 
                     saml = samlResponse.Data;
@@ -263,7 +263,7 @@ namespace OneLoginAws
                         }
 
                         var factor = await client.SAML.VerifyFactor(
-                            appId: settings.AwsAppId,
+                            appId: appOptions.AwsAppId,
                             deviceId: device.DeviceId,
                             stateToken: samlResponse.StateToken,
                             otpToken: otp
@@ -290,7 +290,7 @@ namespace OneLoginAws
             var roles = GetIAMRoleArns(decodedString);
             IAMRole? role = null;
 
-            if (string.IsNullOrEmpty(settings.RoleARN))
+            if (string.IsNullOrEmpty(appOptions.RoleARN))
             {
                 role = _console.Select(
                     message: "Choose a role:",
@@ -310,7 +310,7 @@ namespace OneLoginAws
             }
             else
             {
-                role = roles.Where(role => role.Role == settings.RoleARN).FirstOrDefault();
+                role = roles.Where(role => role.Role == appOptions.RoleARN).FirstOrDefault();
             }
 
             // TODO: this ain't great 🤔
@@ -325,7 +325,7 @@ namespace OneLoginAws
 
                 var assumeRoleReq = new AssumeRoleWithSAMLRequest
                 {
-                    DurationSeconds = int.Parse(settings.DurationSeconds),
+                    DurationSeconds = int.Parse(appOptions.DurationSeconds),
                     RoleArn = role.Role,
                     PrincipalArn = role.Principal,
                     SAMLAssertion = saml
@@ -339,9 +339,9 @@ namespace OneLoginAws
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)
                 );
 
-                awsConfig[settings.Profile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
-                awsConfig[settings.Profile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
-                awsConfig[settings.Profile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
+                awsConfig[appOptions.Profile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
+                awsConfig[appOptions.Profile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
+                awsConfig[appOptions.Profile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
 
                 parser.WriteFile(
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE),
@@ -353,7 +353,7 @@ namespace OneLoginAws
             _console.WriteLine($"{_success} Saving credentials:");
             _console.WriteLine($"  {_pointer} Credentials cached in '{Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)}'");
             _console.WriteLine($"  {_pointer} Expires at {expires.ToLocalTime():yyyy-MM-dd H:mm:sszzz}");
-            _console.WriteLine($"  {_pointer} Use aws cli with --profile {settings.Profile}");
+            _console.WriteLine($"  {_pointer} Use aws cli with --profile {appOptions.Profile}");
         }
     }
 
@@ -365,7 +365,7 @@ namespace OneLoginAws
             {
                 var fileSystem = new FileSystem();
                 var value = result.GetValueOrDefault<string>();
-                var sections = SettingsBuilder.GetConfigNames(fileSystem);
+                var sections = OptionsBuilder.GetConfigNames(fileSystem);
 
                 if (value is null)
                 {

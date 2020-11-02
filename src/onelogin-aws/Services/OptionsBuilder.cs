@@ -147,7 +147,7 @@ namespace OneLoginAws.Services
         {
             if (string.IsNullOrEmpty(_baseUri) || string.IsNullOrEmpty(_clientId) ||
                 string.IsNullOrEmpty(_clientSecret) || string.IsNullOrEmpty(_subdomain) ||
-                string.IsNullOrEmpty(_awsAppId) || string.IsNullOrEmpty(_profile)
+                string.IsNullOrEmpty(_awsAppId)
             )
             {
                 ThrowMissingRequiredSettingsException();
@@ -155,12 +155,13 @@ namespace OneLoginAws.Services
 
             return new (
                 BaseUri: _baseUri, Subdomain: _subdomain, ClientId: _clientId,
-                ClientSecret: _clientSecret, Profile: _profile, DurationSeconds: _durationSeconds, AwsAppId: _awsAppId
+                ClientSecret: _clientSecret, DurationSeconds: _durationSeconds, AwsAppId: _awsAppId
             )
             {
                 Username = _username,
                 Password = _password,
                 OTP = _otp,
+                Profile = _profile,
                 OTPDeviceId = _otpDeviceId,
                 RoleARN = _roleARN,
                 Region = _region,

@@ -343,7 +343,6 @@ namespace OneLoginAws.Test.Services
                     { "ClientSecret", (key >> 3 & 1) != 0 },
                     { "Subdomain", (key >> 2 & 1) != 0 },
                     { "AwsAppId", (key >> 1 & 1) != 0 },
-                    { "Profile", (key >> 0 & 1) != 0 },
                  });
 
             static string PropToSettingsKey(string prop) =>
@@ -354,7 +353,6 @@ namespace OneLoginAws.Test.Services
                     "ClientSecret" => "client_secret",
                     "Subdomain" => "subdomain",
                     "AwsAppId" => "aws_app_id",
-                    "Profile" => "profile",
                     _ => throw new NotImplementedException(),
                 };
 

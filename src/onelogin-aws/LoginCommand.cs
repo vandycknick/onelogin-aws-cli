@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Amazon;
 using Amazon.Runtime;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
@@ -155,6 +157,25 @@ namespace OneLoginAws
             return roles;
         }
 
+        private bool TryGetFallbackProfile(string role, string username, [NotNullWhen(returnValue: true)] out string profile)
+        {
+            profile = "";
+
+            if (Arn.TryParse(role, out var arn))
+            {
+                var roleName = arn.Resource.Split('/').ElementAtOrDefault(1);
+                if (roleName != null)
+                {
+                    profile = $"{arn.AccountId}/{roleName}/{username}";
+                    return true;
+                }
+
+                return false;
+            }
+
+            return false;
+        }
+
         public Device SelectOTPDevice(SAMLResponse saml)
         {
             if (saml.Devices.Count == 1)
@@ -288,11 +309,11 @@ namespace OneLoginAws
             var decodedString = Encoding.UTF8.GetString(data);
 
             var roles = GetIAMRoleArns(decodedString);
-            IAMRole? role = null;
+            IAMRole? iamRole = null;
 
             if (string.IsNullOrEmpty(appOptions.RoleARN))
             {
-                role = _console.Select(
+                iamRole = _console.Select(
                     message: "Choose a role:",
                     items: roles,
                     onRenderItem: (iam, selected) => iam.Role,
@@ -304,17 +325,24 @@ namespace OneLoginAws
                         .Clear()
                         .EraseLines(2)
                         .Write($"{_success} Choose a role: ")
-                        .Cyan(role.Role)
+                        .Cyan(iamRole.Role)
                         .ToString()
                 );
             }
             else
             {
-                role = roles.Where(role => role.Role == appOptions.RoleARN).FirstOrDefault();
+                iamRole = roles.Where(role => role.Role == appOptions.RoleARN).FirstOrDefault();
             }
 
             // TODO: this ain't great 🤔
-            if (role == null) throw new Exception("Invalid role provided!");
+            if (iamRole is null) throw new Exception("Invalid role provided!");
+
+            var appProfile = appOptions.Profile;
+
+            if (appProfile is null && !TryGetFallbackProfile(iamRole.Role, username, out appProfile))
+            {
+                throw new Exception($"Unknown exception: can't generate profile name for role {iamRole.Role} and username {username}.");
+            }
 
             var expires = DateTime.UtcNow;
             using (var spinner = _console.RenderSpinner(true))
@@ -326,8 +354,8 @@ namespace OneLoginAws
                 var assumeRoleReq = new AssumeRoleWithSAMLRequest
                 {
                     DurationSeconds = int.Parse(appOptions.DurationSeconds),
-                    RoleArn = role.Role,
-                    PrincipalArn = role.Principal,
+                    RoleArn = iamRole.Role,
+                    PrincipalArn = iamRole.Principal,
                     SAMLAssertion = saml
                 };
 
@@ -339,9 +367,9 @@ namespace OneLoginAws
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)
                 );
 
-                awsConfig[appOptions.Profile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
-                awsConfig[appOptions.Profile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
-                awsConfig[appOptions.Profile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
+                awsConfig[appProfile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
+                awsConfig[appProfile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
+                awsConfig[appProfile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
 
                 parser.WriteFile(
                     filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE),
@@ -353,7 +381,7 @@ namespace OneLoginAws
             _console.WriteLine($"{_success} Saving credentials:");
             _console.WriteLine($"  {_pointer} Credentials cached in '{Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)}'");
             _console.WriteLine($"  {_pointer} Expires at {expires.ToLocalTime():yyyy-MM-dd H:mm:sszzz}");
-            _console.WriteLine($"  {_pointer} Use aws cli with --profile {appOptions.Profile}");
+            _console.WriteLine($"  {_pointer} Use aws cli with --profile {appProfile}");
         }
     }
 

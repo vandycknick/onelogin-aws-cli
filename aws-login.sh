@@ -13,17 +13,12 @@ Usage:
   aws-login [options]
 
 Options:
-  -p <profile> (REQUIRED)               AWS profile to use.
+  -p <profile>                          AWS profile to use.
   -n                                    Compiles a new version of the tool first
   -?, -h                                Show help and usage information"""
 }
 
 function login {
-    if [ -z "$PROFILE" ]; then
-        echo "Profile is required"
-        exit 1
-    fi
-
     DATA=$(op get item "$ITEM" 2>/dev/null)
 
     if [ -z "$DATA" ]; then
@@ -42,11 +37,16 @@ function login {
         EXE="dotnet run -p src/onelogin-aws --"
     fi
 
-    (jo username=$USERNAME password=$PASSWORD -s otp=$OTP && cat) | \
-        ($EXE login --profile $PROFILE && echo "Press Enter to exit.")
+    if [ -z "$PROFILE" ]; then
+        (jo username=$USERNAME password=$PASSWORD -s otp=$OTP && cat) | \
+            ($EXE login && echo "Press Enter to exit.")
+    else
+        (jo username=$USERNAME password=$PASSWORD -s otp=$OTP && cat) | \
+            ($EXE login --profile "$PROFILE" && echo "Press Enter to exit.")
+    fi
 }
 
-while getopts "h?bp:" opt; do
+while getopts "h?cp:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -55,15 +55,11 @@ while getopts "h?bp:" opt; do
     p)
         PROFILE=$OPTARG
         ;;
-    b)
+    c)
         COMPILE="yes"
         ;;
     esac
 done
 
-if [ -n "$PROFILE" ]; then
-    login
-    exit 0
-else
-    show_help
-fi
+login
+exit 0

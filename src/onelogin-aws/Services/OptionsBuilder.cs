@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text.Json;
 using IniParser;
 using IniParser.Model;
-using OneLoginAws.Console;
 using OneLoginAws.Exceptions;
 using OneLoginAws.Models;
 
@@ -16,6 +15,7 @@ namespace OneLoginAws.Services
     public sealed class OptionsBuilder
     {
         private const string CONFIG_FILE_NAME = ".onelogin-aws.config";
+        private const string CONFIG_FOLDER = "onelogin-aws";
 
         public static string ConfigFile => Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), CONFIG_FILE_NAME);
 
@@ -27,11 +27,28 @@ namespace OneLoginAws.Services
             }
         }
 
-        public static List<string> GetConfigNames(IFileSystem fileSystem)
+        public static IFileInfo FindConfigFile(IFileSystem fileSystem)
         {
-            var file = fileSystem.FileInfo.FromFileName(ConfigFile);
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var xdgHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? Path.Join(userHome, ".config");
+
+            var file = fileSystem.FileInfo.FromFileName(Path.Join(xdgHome, CONFIG_FOLDER, "config"));
+
+            if (file.Exists)
+            {
+                return file;
+            }
+
+            file = fileSystem.FileInfo.FromFileName(Path.Join(userHome, CONFIG_FILE_NAME));
+
             ThrowIfConfigFileMissing(file);
 
+            return file;
+        }
+
+        public static List<string> GetConfigNames(IFileSystem fileSystem)
+        {
+            var file = FindConfigFile(fileSystem);
             using var reader = file.OpenText();
             return GetConfigNames(reader);
         }
@@ -60,10 +77,7 @@ namespace OneLoginAws.Services
 
         public OptionsBuilder(IFileSystem fileSystem)
         {
-            var file = fileSystem.FileInfo.FromFileName(ConfigFile);
-
-            ThrowIfConfigFileMissing(file);
-
+            var file = FindConfigFile(fileSystem);
             using var reader = file.OpenText();
             var parser = new FileIniDataParser();
             _iniConfigFile = parser.ReadData(reader);
@@ -79,6 +93,8 @@ namespace OneLoginAws.Services
 
             _profile = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_PROFILE") ?? _profile;
             _username = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_USERNAME") ?? _username;
+            _password = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_PASSWORD") ?? _password;
+            _otp = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_OTP") ?? _otp;
             _durationSeconds = Environment.GetEnvironmentVariable("ONELOGIN_AWS_CLI_DURATION_SECONDS") ?? _durationSeconds;
 
             return this;
@@ -153,7 +169,7 @@ namespace OneLoginAws.Services
                 ThrowMissingRequiredSettingsException();
             }
 
-            return new (
+            return new(
                 BaseUri: _baseUri, Subdomain: _subdomain, ClientId: _clientId,
                 ClientSecret: _clientSecret, DurationSeconds: _durationSeconds, AwsAppId: _awsAppId
             )

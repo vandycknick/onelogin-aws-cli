@@ -38,11 +38,9 @@ function login {
     fi
 
     if [ -z "$PROFILE" ]; then
-        (jo username=$USERNAME password=$PASSWORD -s otp=$OTP && cat) | \
-            ($EXE login && echo "Press Enter to exit.")
+        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP $EXE login
     else
-        (jo username=$USERNAME password=$PASSWORD -s otp=$OTP && cat) | \
-            ($EXE login --profile "$PROFILE" && echo "Press Enter to exit.")
+        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP $EXE login --profile "$PROFILE"
     fi
 }
 

@@ -4,24 +4,17 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Amazon;
-using Amazon.Runtime;
-using Amazon.SecurityToken;
-using Amazon.SecurityToken.Model;
-using IniParser;
-using OneLoginApi.Exceptions;
 using OneLoginApi.Models;
-using OneLoginAws.Console;
-using OneLoginAws.Extensions;
 using OneLoginAws.Models;
 using OneLoginAws.Services;
-using IConsole = OneLoginAws.Console.IConsole;
+using OneLoginAws.Extensions;
+using Spectre.Console;
 
 namespace OneLoginAws
 {
@@ -87,7 +80,9 @@ namespace OneLoginAws
                 var client = new OneLoginClientFactory();
                 var fileSystem = new FileSystem();
                 var builder = new OptionsBuilder(fileSystem);
-                var handler = new LoginCommand(client, new SystemConsole(), builder);
+                var console = AnsiConsole.Create(new AnsiConsoleSettings());
+                var aws = new AwsService(fileSystem);
+                var handler = new LoginCommand(client, builder, console, aws);
 
                 return handler.InvokeAsync(profile, username, configName, region);
             });
@@ -99,30 +94,29 @@ namespace OneLoginAws
         private static readonly Encoding _utf8WithoutBom = new UTF8Encoding(false);
 
         private readonly IOneLoginClientFactory _oneLoginClientFactory;
-        private readonly IConsole _console;
         private readonly OptionsBuilder _appOptionsBuilder;
-        private readonly AnsiStringBuilder _ansiBuilder;
+        private readonly IAnsiConsole _ansiConsole;
+        private readonly AwsService _aws;
 
         private readonly string _info;
         private readonly string _success;
         private readonly string _warning;
         private readonly string _error;
-        private readonly string _question;
+        // private readonly string _question;
         private readonly string _pointer;
 
-        public LoginCommand(IOneLoginClientFactory oneLoginClientFactory, IConsole console, OptionsBuilder appOptionsBuilder)
+        public LoginCommand(IOneLoginClientFactory oneLoginClientFactory, OptionsBuilder appOptionsBuilder, IAnsiConsole console, AwsService aws)
         {
             _oneLoginClientFactory = oneLoginClientFactory;
-            _console = console;
             _appOptionsBuilder = appOptionsBuilder;
+            _ansiConsole = console;
+            _aws = aws;
 
-            _ansiBuilder = new AnsiStringBuilder();
-            _info = _ansiBuilder.Clear().Blue("ℹ").ToString();
-            _success = _ansiBuilder.Clear().Green("✔").ToString();
-            _warning = _ansiBuilder.Clear().Yellow("⚠").ToString();
-            _error = _ansiBuilder.Clear().Red("✖").ToString();
-            _question = _ansiBuilder.Clear().Green("?").ToString();
-            _pointer = _ansiBuilder.Clear().Write("\x1b[38;5;245m").Write("❯").ResetColor().ToString();
+            _info = "[blue]ℹ [/]";
+            _success = "[green] ✔[/]";
+            _warning = "[yellow]⚠[/]";
+            _error = "[red]✖[/red]";
+            _pointer = "[grey54]❯[/]";
         }
 
         private List<IAMRole> GetIAMRoleArns(string saml)
@@ -183,20 +177,13 @@ namespace OneLoginAws
                 return saml.Devices[0];
             }
 
-            _console.Write("  ");
-            var device = _console.Select(
-                message: "Select your OTP Device:",
-                items: saml.Devices,
-                onRenderItem: (device, selected) => $"[{device.DeviceId}]: {device.DeviceType}",
-                indent: 5
-            );
+            var otp = new SelectionPrompt<Device>()
+                .Title("Select your OTP Device:")
+                .PageSize(10)
+                .UseConverter(device => $"[{device.DeviceId}]: {device.DeviceType}")
+                .AddChoices(saml.Devices);
 
-            _console.WriteLine(
-                _ansiBuilder.Clear().EraseLines(2)
-                .Write($"  {_success} Select your OTP Device: ").Cyan(device.DeviceType)
-                .ToString()
-            );
-            return device;
+            return _ansiConsole.Prompt(otp);
         }
 
         public async Task InvokeAsync(string? profile, string? username, string? configName, string? region)
@@ -211,12 +198,6 @@ namespace OneLoginAws
                 .UseProfile(profile)
                 .UseRegion(region);
 
-            if (_console.IsInputRedirected)
-            {
-                var line = _console.In.ReadLine();
-                _appOptionsBuilder.UseFromJson(line);
-            }
-
             var appOptions = _appOptionsBuilder.Build();
             (username, password, otp, otpDeviceId) = appOptions;
 
@@ -225,40 +206,30 @@ namespace OneLoginAws
 
             if (string.IsNullOrEmpty(username))
             {
-                username = _console.Input<string>("OneLogin Username:");
-                _console.Write(_ansiBuilder.Clear().EraseLines(2).ToString());
+                username = _ansiConsole.Ask<string>($"{_info} OneLogin Username: ");
+                _ansiConsole.CursorUp();
+                _ansiConsole.EraseLine();
             }
 
-            _console.WriteLine(
-                _ansiBuilder
-                    .Clear()
-                    .Write($"{_success} OneLogin Username: ")
-                    .Cyan(username)
-                    .ToString()
-            );
+            _ansiConsole.MarkupLine($"{_success} OneLogin Username: [teal]{username}[/]");
 
             if (string.IsNullOrEmpty(password))
             {
-                password = _console.Password("OneLogin Password:");
-                _console.Write(_ansiBuilder.Clear().EraseLines(2).ToString());
+                password = _ansiConsole.Prompt(
+                    new TextPrompt<string>($"{_info} OneLogin Password:")
+                        .Secret()
+                );
+                _ansiConsole.CursorUp();
+                _ansiConsole.EraseLine();
             }
 
-            _console.WriteLine(
-                _ansiBuilder
-                    .Clear()
-                    .Write($"{_success} OneLogin Password: ")
-                    .Cyan("[input is masked]")
-                    .ToString()
-            );
+            _ansiConsole.MarkupLine($"{_success} OneLogin Password: [teal]***[/]");
 
             var saml = string.Empty;
-            var typedOTP = otp == null;
 
-            try
-            {
-                using (var spinner = _console.RenderSpinner(true))
+            var response = await AnsiConsole.Status()
+                .StartAsync("Requesting SAML assertion", async ctx =>
                 {
-                    _console.Write("  Requesting SAML assertion");
                     var samlResponse = await client.SAML.GenerateSamlAssertion(
                         usernameOrEmail: username,
                         password: password,
@@ -266,76 +237,61 @@ namespace OneLoginAws
                         subdomain: appOptions.Subdomain
                     );
 
-                    saml = samlResponse.Data;
-                    if (samlResponse.Message != "Success")
+                    return samlResponse;
+                });
+
+            if (response.Message != "Success")
+            {
+                var device = SelectOTPDevice(response);
+
+                if (string.IsNullOrEmpty(otp))
+                {
+                    otp = _ansiConsole.Ask<string>($"{_info} OTP Token:");
+                    _ansiConsole.CursorUp();
+                }
+
+                _ansiConsole.MarkupLine($"{_success} OTP Token: [teal]{otp}[/]");
+
+                var factor = await AnsiConsole.Status()
+                    .StartAsync("Verifying OTP", async ctx =>
                     {
-                        if (string.IsNullOrEmpty(otp) || samlResponse.Devices?.Count > 1)
-                        {
-                            spinner.Stop();
-                            _console.WriteLine(_ansiBuilder.Clear().CursorLeft().Write($"{_warning} Requesting SAML assertion").ToString());
-                        }
-
-                        var device = SelectOTPDevice(samlResponse);
-
-                        if (string.IsNullOrEmpty(otp))
-                        {
-                            _console.Write($"  ");
-                            otp = _console.Input<string>("OTP Token:");
-                        }
 
                         var factor = await client.SAML.VerifyFactor(
                             appId: appOptions.AwsAppId,
                             deviceId: device.DeviceId,
-                            stateToken: samlResponse.StateToken,
+                            stateToken: response.StateToken,
                             otpToken: otp
                         );
 
-                        saml = factor.Data;
-                    }
-                }
-
-                _console.Write(_ansiBuilder.EraseLines(typedOTP ? 3 : 1).CursorLeft().ToString());
-                _console.WriteLine($"{_success} Requesting SAML assertion");
-                if (typedOTP) _console.WriteLine($"  {_success} OTP Token: {otp}");
+                        return factor;
+                    });
+                saml = factor.Data;
             }
-            catch (ApiException)
+            else
             {
-                _console.Write(_ansiBuilder.EraseLines(1).CursorLeft().ToString());
-                _console.WriteLine($"{_error} Requesting SAML assertion");
-                throw;
+                saml = response.Data;
             }
 
             var data = Convert.FromBase64String(saml);
             var decodedString = Encoding.UTF8.GetString(data);
 
             var roles = GetIAMRoleArns(decodedString);
-            IAMRole? iamRole = null;
+            var iamPrompt = new SelectionPrompt<IAMRole>()
+                .Title($"{_info} Choose a role:")
+                .PageSize(20)
+                .UseConverter(role => role.Role)
+                .AddChoices(roles);
 
-            if (string.IsNullOrEmpty(appOptions.RoleARN))
-            {
-                iamRole = _console.Select(
-                    message: "Choose a role:",
-                    items: roles,
-                    onRenderItem: (iam, selected) => iam.Role,
-                    indent: 2
-                );
+            var iamRole = string.IsNullOrEmpty(appOptions.RoleARN) ?
+                            _ansiConsole.Prompt(iamPrompt) :
+                            roles.Where(role => role.Role == appOptions.RoleARN).FirstOrDefault();
 
-                _console.WriteLine(
-                    _ansiBuilder
-                        .Clear()
-                        .EraseLines(2)
-                        .Write($"{_success} Choose a role: ")
-                        .Cyan(iamRole.Role)
-                        .ToString()
-                );
-            }
-            else
+            if (iamRole is null)
             {
-                iamRole = roles.Where(role => role.Role == appOptions.RoleARN).FirstOrDefault();
+                throw new Exception($"Invalid IAM role: {appOptions.RoleARN}.");
             }
 
-            // TODO: this ain't great 🤔
-            if (iamRole is null) throw new Exception("Invalid role provided!");
+            _ansiConsole.MarkupLine($"{_success} Choose a role: [teal]{iamRole.Role}[/]");
 
             var appProfile = appOptions.Profile;
 
@@ -344,44 +300,17 @@ namespace OneLoginAws
                 throw new Exception($"Unknown exception: can't generate profile name for role {iamRole.Role} and username {username}.");
             }
 
-            var expires = DateTime.UtcNow;
-            using (var spinner = _console.RenderSpinner(true))
-            {
-                _console.Write("  Saving credentials");
-
-                var stsClient = new AmazonSecurityTokenServiceClient(new AnonymousAWSCredentials());
-
-                var assumeRoleReq = new AssumeRoleWithSAMLRequest
-                {
-                    DurationSeconds = int.Parse(appOptions.DurationSeconds),
-                    RoleArn = iamRole.Role,
-                    PrincipalArn = iamRole.Principal,
-                    SAMLAssertion = saml
-                };
-
-                var assumeRoleRes = await stsClient.AssumeRoleWithSAMLAsync(assumeRoleReq);
-                expires = assumeRoleRes.Credentials.Expiration;
-
-                var parser = new FileIniDataParser();
-                var awsConfig = parser.ReadFile(
-                    filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)
+            var expires = await AnsiConsole.Status()
+                .StartAsync("Saving credentials", _ =>
+                    _aws.AssumeRole(
+                        iamRole.Role, iamRole.Principal,
+                        saml, int.Parse(appOptions.DurationSeconds), appProfile)
                 );
 
-                awsConfig[appProfile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
-                awsConfig[appProfile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
-                awsConfig[appProfile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
-
-                parser.WriteFile(
-                    filePath: Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE),
-                    parsedData: awsConfig,
-                    fileEncoding: _utf8WithoutBom
-                );
-            }
-
-            _console.WriteLine($"{_success} Saving credentials:");
-            _console.WriteLine($"  {_pointer} Credentials cached in '{Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AWS_CONFIG_FILE)}'");
-            _console.WriteLine($"  {_pointer} Expires at {expires.ToLocalTime():yyyy-MM-dd H:mm:sszzz}");
-            _console.WriteLine($"  {_pointer} Use aws cli with --profile {appProfile}");
+            _ansiConsole.MarkupLine($"{_success} Saving credentials:");
+            _ansiConsole.MarkupLine($"  {_pointer} Credentials cached in '{_aws.ConfigFile}'");
+            _ansiConsole.MarkupLine($"  {_pointer} Expires at {expires.ToLocalTime():yyyy-MM-dd H:mm:sszzz}");
+            _ansiConsole.MarkupLine($"  {_pointer} Use aws cli with --profile {appProfile}");
         }
     }
 

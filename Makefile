@@ -59,3 +59,7 @@ package-native:
 		-p:PublishSingleFile=true \
 		-p:PublishTrimmed=true \
 		-p:IncludeNativeLibrariesForSelfExtract=true
+
+.PHONY: install
+install: package-native
+	cp $(ARTIFACTS)/$(RUNTIME)/$(CLI_TOOL) ~/.local/bin

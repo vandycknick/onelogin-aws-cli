@@ -3,7 +3,7 @@ set -o pipefail -o noclobber -o nounset
 
 PROFILE=""
 COMPILE=""
-ITEM='<item name>'
+ITEM='OneLogin Datacamp'
 
 function show_help {
     echo """aws-login:
@@ -14,7 +14,7 @@ Usage:
 
 Options:
   -p <profile>                          AWS profile to use.
-  -n                                    Compiles a new version of the tool first
+  -c                                    Compiles a new version of the tool first
   -?, -h                                Show help and usage information"""
 }
 

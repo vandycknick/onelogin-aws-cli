@@ -308,7 +308,7 @@ namespace OneLoginAws
                 );
 
             _ansiConsole.MarkupLine($"{_success} Saving credentials:");
-            _ansiConsole.MarkupLine($"  {_pointer} Credentials cached in '{_aws.ConfigFile}'");
+            _ansiConsole.MarkupLine($"  {_pointer} Credentials cached in '{_aws.CredentialsFile}'");
             _ansiConsole.MarkupLine($"  {_pointer} Expires at {expires.ToLocalTime():yyyy-MM-dd H:mm:sszzz}");
             _ansiConsole.MarkupLine($"  {_pointer} Use aws cli with --profile {appProfile}");
         }

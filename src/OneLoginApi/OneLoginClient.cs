@@ -22,7 +22,7 @@ namespace OneLoginApi
 
             if (!_validRegions.Contains(region))
             {
-                throw new ArgumentException(nameof(region), $"Invalid region only `us` or `eu` allowed, but was given `{region}`.");
+                throw new ArgumentException($"Invalid region only `us` or `eu` allowed, but was given `{region}`.", nameof(region));
             }
 
             return new Uri($"https://api.{region}.onelogin.com");

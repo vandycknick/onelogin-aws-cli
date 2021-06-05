@@ -2,8 +2,7 @@
 set -o pipefail -o noclobber -o nounset
 
 PROFILE=""
-COMPILE=""
-ITEM='OneLogin Datacamp'
+ITEM=""
 
 function show_help {
     echo """aws-login:
@@ -14,7 +13,6 @@ Usage:
 
 Options:
   -p <profile>                          AWS profile to use.
-  -c                                    Compiles a new version of the tool first
   -?, -h                                Show help and usage information"""
 }
 
@@ -29,13 +27,7 @@ function login {
     USERNAME=$(echo $DATA | jq -r '.details.fields[] | select(.name == "email") | .value')
     PASSWORD=$(echo $DATA | jq -r '.details.fields[] | select(.name == "password") | .value')
     OTP=$(op get totp "$ITEM")
-
-    if [ -z "$COMPILE" ]; then
-        OS=$(uname -s | awk '{print tolower($0)}' | sed "s/darwin/osx/")
-        EXE="./artifacts/$OS-x64/onelogin-aws"
-    else
-        EXE="dotnet run -p src/onelogin-aws --"
-    fi
+    EXE="dotnet run -p src/onelogin-aws --"
 
     if [ -z "$PROFILE" ]; then
         ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP $EXE login
@@ -52,9 +44,6 @@ while getopts "h?cp:" opt; do
         ;;
     p)
         PROFILE=$OPTARG
-        ;;
-    c)
-        COMPILE="yes"
         ;;
     esac
 done

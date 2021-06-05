@@ -90,7 +90,6 @@ namespace OneLoginAws
             return command;
         }
 
-        private const string AWS_CONFIG_FILE = ".aws/credentials";
         private static readonly Encoding _utf8WithoutBom = new UTF8Encoding(false);
 
         private readonly IOneLoginClientFactory _oneLoginClientFactory;

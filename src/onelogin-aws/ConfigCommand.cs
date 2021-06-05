@@ -1,11 +1,6 @@
-﻿using System;
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using Amazon;
-using IniParser;
 
 namespace OneLoginAws
 {

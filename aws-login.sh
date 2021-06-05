@@ -2,7 +2,7 @@
 set -o pipefail -o noclobber -o nounset
 
 PROFILE=""
-ITEM=""
+ITEM="OneLogin DataCamp"
 
 function show_help {
     echo """aws-login:

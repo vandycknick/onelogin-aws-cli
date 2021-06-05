@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Amazon.Runtime;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
-using IniParser;
+using OneLoginAws.Utils;
 
 namespace OneLoginAws.Services
 {
@@ -21,7 +21,6 @@ namespace OneLoginAws.Services
 
         private readonly IFileSystem _fileSystem;
         private readonly AmazonSecurityTokenServiceClient _stsClient;
-        private readonly FileIniDataParser _iniParser;
 
         public string ConfigFile
         {
@@ -37,7 +36,6 @@ namespace OneLoginAws.Services
         {
             _fileSystem = fileSystem;
             _stsClient = new AmazonSecurityTokenServiceClient(new AnonymousAWSCredentials());
-            _iniParser = new FileIniDataParser();
         }
 
         public async Task<DateTime> AssumeRole(string roleArn, string principalArn, string saml, int duration, string profile)
@@ -58,20 +56,16 @@ namespace OneLoginAws.Services
                 DurationSeconds = duration,
             };
 
-
             var assumeRoleRes = await _stsClient.AssumeRoleWithSAMLAsync(assumeRoleReq);
-            var parser = new FileIniDataParser();
-            var awsConfig = parser.ReadFile(CredentialsFile);
+            var awsConfig = IniFile.Open(CredentialsFile);
+
+            awsConfig.CreateSectionIfNotExists(profile);
 
             awsConfig[profile]["aws_access_key_id"] = assumeRoleRes.Credentials.AccessKeyId;
             awsConfig[profile]["aws_secret_access_key"] = assumeRoleRes.Credentials.SecretAccessKey;
             awsConfig[profile]["aws_session_token"] = assumeRoleRes.Credentials.SessionToken;
 
-            parser.WriteFile(
-                filePath: CredentialsFile,
-                parsedData: awsConfig,
-                fileEncoding: _utf8WithoutBom
-            );
+            awsConfig.Save(_utf8WithoutBom);
 
             return assumeRoleRes.Credentials.Expiration;
         }

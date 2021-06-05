@@ -27,12 +27,11 @@ function login {
     USERNAME=$(echo $DATA | jq -r '.details.fields[] | select(.name == "email") | .value')
     PASSWORD=$(echo $DATA | jq -r '.details.fields[] | select(.name == "password") | .value')
     OTP=$(op get totp "$ITEM")
-    EXE="dotnet run -p src/onelogin-aws --"
 
     if [ -z "$PROFILE" ]; then
-        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP $EXE login
+        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP onelogin-aws login
     else
-        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP $EXE login --profile "$PROFILE"
+        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP onelogin-aws login --profile "$PROFILE"
     fi
 }
 

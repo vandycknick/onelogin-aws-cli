@@ -99,9 +99,8 @@ namespace OneLoginAws
 
         private readonly string _info;
         private readonly string _success;
-        private readonly string _warning;
-        private readonly string _error;
-        // private readonly string _question;
+        // private readonly string _warning;
+        // private readonly string _error;
         private readonly string _pointer;
 
         public LoginCommand(IOneLoginClientFactory oneLoginClientFactory, OptionsBuilder appOptionsBuilder, IAnsiConsole console, AwsService aws)
@@ -113,8 +112,8 @@ namespace OneLoginAws
 
             _info = "[blue]ℹ[/]";
             _success = "[green]✔[/]";
-            _warning = "[yellow]⚠[/]";
-            _error = "[red]✖[/red]";
+            // _warning = "[yellow]⚠[/]";
+            // _error = "[red]✖[/red]";
             _pointer = "[grey54]❯[/]";
         }
 

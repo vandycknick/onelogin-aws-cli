@@ -111,8 +111,8 @@ namespace OneLoginAws
             _ansiConsole = console;
             _aws = aws;
 
-            _info = "[blue]ℹ [/]";
-            _success = "[green] ✔[/]";
+            _info = "[blue]ℹ[/]";
+            _success = "[green]✔[/]";
             _warning = "[yellow]⚠[/]";
             _error = "[red]✖[/red]";
             _pointer = "[grey54]❯[/]";

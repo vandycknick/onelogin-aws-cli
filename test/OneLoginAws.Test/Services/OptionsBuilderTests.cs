@@ -226,29 +226,6 @@ namespace OneLoginAws.Test.Services
         }
 
         [Theory]
-        [MemberData(nameof(GetJsonStrings))]
-        public void OptionsBuilder_UseFromJsonInput_AddsValuesFromJsonString(string json, Dictionary<string, string> expected)
-        {
-            // Given
-            var fileName = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".onelogin-aws.config");
-            var mockFileSystem = new MockFileSystem();
-            mockFileSystem.AddFile(fileName, TestFileUno);
-
-            // When
-            var settings = new OptionsBuilder(mockFileSystem.Object)
-                .UseDefaults()
-                .UseFromJson(json)
-                .Build();
-
-            // Then
-            foreach (var record in expected)
-            {
-                var value = settings.GetType().GetProperty(record.Key).GetValue(settings, null);
-                Assert.Equal(record.Value, value);
-            }
-        }
-
-        [Theory]
         [MemberData(nameof(GetMissingRequiredSettingTestData))]
         public void OptionsBuilder_Build_ThrowsAnExceptionWhenARequiredFieldIsNotSet(string file, Dictionary<string, bool> expected)
         {

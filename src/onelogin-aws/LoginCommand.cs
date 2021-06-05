@@ -25,54 +25,31 @@ namespace OneLoginAws
             var command = new Command("login")
             {
                 new Option(
-                    new string[] { "-C", "-c", "--config-name"}
-                )
-                {
-                    Argument = new Argument<string>()
-                    {
-                        Name = "configName",
-                        Arity = ArgumentArity.ExactlyOne,
-                    }.ValidateConfigNames(),
-                    Description = " Switch configuration name within config file",
-                },
+                    aliases: new string[] { "-C", "-c", "--config-name"},
+                    description: "Switch configuration name within config file",
+                    arity: ArgumentArity.ExactlyOne
+                ),
                 new Option(
-                    new string[] { "-p", "--profile"}
-                )
-                {
-                    Argument = new Argument<string>()
-                    {
-                        Name = "profile",
-                    },
-                    Description = "AWS profile name.",
-                },
+                    aliases: new string[] { "-p", "--profile"},
+                    description: "AWS profile name.",
+                    arity: ArgumentArity.ExactlyOne
+                ),
                 new Option(
-                    new string[] { "-u", "--username" }
-                )
-                {
-                    Argument = new Argument<string>()
-                    {
-                        Name = "username",
-                    },
-                    Description = "AWS profile to use.",
-                },
+                    aliases: new string[] { "-u", "--username" },
+                    description: "OneLogin username.",
+                    arity: ArgumentArity.ExactlyOne
+                ),
                 new Option(
-                    new string[] { "-r", "--region"}
-                )
-                {
-                    Argument = new Argument<string>()
-                    {
-                       Name = "region",
-                       Arity = ArgumentArity.ExactlyOne,
-                    },
-                    Description = "Specify default region for AWS profile being updated"
-                },
+                    aliases: new string[] { "-r", "--region"},
+                    description: "Specify default region for AWS profile being updated",
+                    arity: ArgumentArity.ExactlyOne
+                ),
                 new Option(
-                    new string[] { "-v", "--verbose"}
-                )
-                {
-                    Argument = new Argument<bool>(),
-                    Description = "Verbose output.",
-                }
+                    aliases: new string[] { "-v", "--verbose"},
+                    argumentType: typeof(bool),
+                    description: "Verbose output.",
+                    arity: ArgumentArity.ExactlyOne
+                ),
             };
 
             command.Handler = CommandHandler.Create<string, string, string, string>((profile, configName, region, username) =>

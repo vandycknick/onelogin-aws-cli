@@ -92,7 +92,7 @@ namespace OneLoginAws
             }
 
             System.Console.ResetColor();
-            context.ResultCode = 1;
+            context.ExitCode = 1;
         }
     }
 }

@@ -92,19 +92,31 @@ namespace OneLoginAws.Services
 
         public OptionsBuilder UseUsername(string? username)
         {
-            _username = username ?? _username;
+            if (!string.IsNullOrEmpty(username))
+            {
+                _username = username;
+            }
+
             return this;
         }
 
         public OptionsBuilder UseProfile(string? profile)
         {
-            _profile = profile ?? _profile;
+            if (!string.IsNullOrEmpty(profile))
+            {
+                _profile = profile;
+            }
+
             return this;
         }
 
         public OptionsBuilder UseRegion(string? region)
         {
-            _region = region ?? _region;
+            if (!string.IsNullOrEmpty(region))
+            {
+                _region = region;
+            }
+
             return this;
         }
 
@@ -126,26 +138,6 @@ namespace OneLoginAws.Services
             _roleARN = data.GetValueOrDefault("role_arn") ?? _roleARN;
             _region = data.GetValueOrDefault("region") ?? _region;
 
-            return this;
-        }
-
-        private record Credentials(string? Username, string? Password, string? OTP);
-
-        public OptionsBuilder UseFromJson(string? line)
-        {
-            if (line is null)
-            {
-                return this;
-            }
-
-            var creds = JsonSerializer.Deserialize<Credentials>(line, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            _username = creds?.Username ?? _username;
-            _password = creds?.Password ?? _password;
-            _otp = creds?.OTP ?? _otp;
             return this;
         }
 

@@ -6,7 +6,7 @@ ITEM=""
 
 function show_help {
     echo """aws-login:
-  OneLogin aws cli
+  AWS Login CLI
 
 Usage:
   aws-login [options]

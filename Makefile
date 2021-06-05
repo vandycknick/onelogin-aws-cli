@@ -63,3 +63,9 @@ package-native:
 .PHONY: install
 install: package-native
 	cp $(ARTIFACTS)/$(RUNTIME)/$(CLI_TOOL) ~/.local/bin
+
+
+.PHONY: install-script
+install-script:
+	cp aws-login.sh ~/.local/bin/aws-login
+	chmod u+x ~/.local/bin/aws-login

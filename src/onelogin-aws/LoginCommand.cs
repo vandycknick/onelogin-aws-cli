@@ -155,7 +155,7 @@ namespace OneLoginAws
             var otp = new SelectionPrompt<Device>()
                 .Title("Select your OTP Device:")
                 .PageSize(10)
-                .UseConverter(device => $"[{device.DeviceId}]: {device.DeviceType}")
+                .UseConverter(device => $"({device.DeviceId}): {device.DeviceType}")
                 .AddChoices(saml.Devices);
 
             return _ansiConsole.Prompt(otp);

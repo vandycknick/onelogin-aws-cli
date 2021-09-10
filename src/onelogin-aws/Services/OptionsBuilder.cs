@@ -5,9 +5,10 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Text.Json;
+using IniParser;
+using IniParser.Model;
 using OneLoginAws.Exceptions;
 using OneLoginAws.Models;
-using OneLoginAws.Utils;
 
 namespace OneLoginAws.Services
 {
@@ -45,14 +46,21 @@ namespace OneLoginAws.Services
             return file;
         }
 
-        public static IReadOnlyList<string> GetConfigNames(IFileSystem fileSystem)
+        public static List<string> GetConfigNames(IFileSystem fileSystem)
         {
             var file = FindConfigFile(fileSystem);
-            var ini = IniFile.Open(file);
-            return ini.GetSections().ToList();
+            using var reader = file.OpenText();
+            return GetConfigNames(reader);
         }
 
-        private readonly IniFile _iniConfigFile;
+        public static List<string> GetConfigNames(StreamReader reader)
+        {
+            var parser = new FileIniDataParser();
+            var data = parser.ReadData(reader);
+            return data.Sections.Select(section => section.SectionName).ToList();
+        }
+
+        private readonly IniData _iniConfigFile;
         private string? _baseUri;
         private string? _subdomain;
         private string? _username;
@@ -70,7 +78,9 @@ namespace OneLoginAws.Services
         public OptionsBuilder(IFileSystem fileSystem)
         {
             var file = FindConfigFile(fileSystem);
-            _iniConfigFile = IniFile.Open(file);
+            using var reader = file.OpenText();
+            var parser = new FileIniDataParser();
+            _iniConfigFile = parser.ReadData(reader);
         }
 
         public OptionsBuilder UseDefaults() => UseConfigName("defaults");
@@ -126,17 +136,17 @@ namespace OneLoginAws.Services
 
             var data = _iniConfigFile[name];
 
-            _baseUri = data.GetValueOrDefault("base_uri") ?? _baseUri;
-            _subdomain = data.GetValueOrDefault("subdomain") ?? _subdomain;
-            _username = data.GetValueOrDefault("username") ?? _username;
-            _otpDeviceId = data.GetValueOrDefault("otp_device_id") ?? _otpDeviceId;
-            _clientId = data.GetValueOrDefault("client_id") ?? _clientId;
-            _clientSecret = data.GetValueOrDefault("client_secret") ?? _clientSecret;
-            _profile = data.GetValueOrDefault("profile") ?? _profile;
-            _durationSeconds = data.GetValueOrDefault("duration_seconds") ?? _durationSeconds;
-            _awsAppId = data.GetValueOrDefault("aws_app_id") ?? _awsAppId;
-            _roleARN = data.GetValueOrDefault("role_arn") ?? _roleARN;
-            _region = data.GetValueOrDefault("region") ?? _region;
+            _baseUri = data["base_uri"] ?? _baseUri;
+            _subdomain = data["subdomain"] ?? _subdomain;
+            _username = data["username"] ?? _username;
+            _otpDeviceId = data["otp_device_id"] ?? _otpDeviceId;
+            _clientId = data["client_id"] ?? _clientId;
+            _clientSecret = data["client_secret"] ?? _clientSecret;
+            _profile = data["profile"] ?? _profile;
+            _durationSeconds = data["duration_seconds"] ?? _durationSeconds;
+            _awsAppId = data["aws_app_id"] ?? _awsAppId;
+            _roleARN = data["role_arn"] ?? _roleARN;
+            _region = data["region"] ?? _region;
 
             return this;
         }

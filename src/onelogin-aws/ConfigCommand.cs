@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Threading.Tasks;
-using OneLoginAws.Utils;
 
 namespace OneLoginAws
 {

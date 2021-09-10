@@ -145,17 +145,23 @@ namespace OneLoginAws
             return false;
         }
 
-        public Device SelectOTPDevice(SAMLResponse saml)
+        public Device SelectOTPDevice(SAMLResponse saml, string? otpDeviceId)
         {
             if (saml.Devices.Count == 1)
             {
                 return saml.Devices[0];
             }
 
+            var preferredDevice = saml.Devices.Where(device => $"{device.DeviceId}" == otpDeviceId).FirstOrDefault();
+            if (preferredDevice != null)
+            {
+                return preferredDevice;
+            }
+
             var otp = new SelectionPrompt<Device>()
                 .Title("Select your OTP Device:")
                 .PageSize(10)
-                .UseConverter(device => $"[{device.DeviceId}]: {device.DeviceType}")
+                .UseConverter(device => $"({device.DeviceId}): {device.DeviceType}")
                 .AddChoices(saml.Devices);
 
             return _ansiConsole.Prompt(otp);
@@ -217,7 +223,7 @@ namespace OneLoginAws
 
             if (response.Message != "Success")
             {
-                var device = SelectOTPDevice(response);
+                var device = SelectOTPDevice(response, otpDeviceId);
 
                 if (string.IsNullOrEmpty(otp))
                 {

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.2.0] - 2021-09-10
 
 ### Added
 
@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Removed
 
 -   Remove piped json parsing and just result to env vars. This is a breaking change, which means it's no longer possible to pipe json into onelogin-aws.
+
+## Fixed
+
+-   Pass otp_device_id through from the config
 
 ## [v0.1.1] - 2020-08-27
 

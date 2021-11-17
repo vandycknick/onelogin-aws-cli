@@ -58,7 +58,8 @@ package-native:
 		--output $(ARTIFACTS)/$(RUNTIME) \
 		-p:PublishSingleFile=true \
 		-p:PublishTrimmed=true \
-		-p:IncludeNativeLibrariesForSelfExtract=true
+		-p:IncludeNativeLibrariesForSelfExtract=true \
+		-p:EnableCompressionInSingleFile=true
 
 .PHONY: install
 install: package-native

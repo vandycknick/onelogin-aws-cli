@@ -91,7 +91,7 @@ namespace OneLoginAws
             _success = "[green]✔[/]";
             // _warning = "[yellow]⚠[/]";
             // _error = "[red]✖[/red]";
-            _pointer = "[grey54]❯[/]";
+            _pointer = "[grey]❯[/]";
         }
 
         private List<IAMRole> GetIAMRoleArns(string saml)

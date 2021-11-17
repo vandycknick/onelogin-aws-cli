@@ -2,6 +2,7 @@
 set -o pipefail -o noclobber -o nounset
 
 PROFILE=""
+CONFIG_NAME=""
 ITEM=""
 
 function show_help {
@@ -13,6 +14,7 @@ Usage:
 
 Options:
   -p <profile>                          AWS profile to use.
+  -c <config-name>                      Configuration to use.
   -?, -h                                Show help and usage information"""
 }
 
@@ -28,14 +30,16 @@ function login {
     PASSWORD=$(echo $DATA | jq -r '.details.fields[] | select(.name == "password") | .value')
     OTP=$(op get totp "$ITEM")
 
-    if [ -z "$PROFILE" ]; then
-        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP onelogin-aws login
-    else
+    if [ ! -z "$PROFILE" ]; then
         ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP onelogin-aws login --profile "$PROFILE"
+    elif [ ! -z "$CONFIG_NAME" ]; then
+        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP onelogin-aws login --config-name "$CONFIG_NAME"
+    else
+        ONELOGIN_AWS_CLI_USERNAME=$USERNAME ONELOGIN_AWS_CLI_PASSWORD=$PASSWORD ONELOGIN_AWS_CLI_OTP=$OTP onelogin-aws login
     fi
 }
 
-while getopts "h?cp:" opt; do
+while getopts "h?c:p:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -43,6 +47,9 @@ while getopts "h?cp:" opt; do
         ;;
     p)
         PROFILE=$OPTARG
+        ;;
+    c)
+        CONFIG_NAME=$OPTARG
         ;;
     esac
 done

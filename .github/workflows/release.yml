@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-    - 'v*'
+      - "v*"
 
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '5.0.300'
+          dotnet-version: "6.0.100"
 
       - name: Package
         run: make
@@ -37,33 +37,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifacts
 
-    - uses: actions/download-artifact@v2
-      with:
-        name: artifacts
+      - name: Prepare Release
+        run: |
+          ls -R
+          mkdir release
+          cp linux-x64/onelogin-aws release/onelogin-aws-linux-x64
+          chmod +x release/onelogin-aws-linux-x64
+          cp osx-x64/onelogin-aws release/onelogin-aws-osx-x64
+          chmod +x release/onelogin-aws-osx-x64
+          cp *.nupkg release
+          cd release && sha256sum * > checksums.txt
 
-    - name: Prepare Release
-      run: |
-        ls -R
-        mkdir release
-        cp linux-x64/onelogin-aws release/onelogin-aws-linux-x64
-        chmod +x release/onelogin-aws-linux-x64
-        cp osx-x64/onelogin-aws release/onelogin-aws-osx-x64
-        chmod +x release/onelogin-aws-osx-x64
-        cp *.nupkg release
-        cd release && sha256sum * > checksums.txt
+      - uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: release
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: release
-        path: release
-
-    - name: Push to feedz.io
-      run: dotnet nuget push release/*.nupkg --api-key ${{ secrets.FEEDZ_IO_TOKEN }} --source https://f.feedz.io/nvd/onelogin-aws-cli/nuget/index.json --skip-duplicate
+      - name: Push to feedz.io
+        run: dotnet nuget push release/*.nupkg --api-key ${{ secrets.FEEDZ_IO_TOKEN }} --source https://f.feedz.io/nvd/onelogin-aws-cli/nuget/index.json --skip-duplicate
 
     # - name: Push to nuget
     #   run: dotnet nuget push artifacts/**/*.nupkg --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json --skip-duplicate
